@@ -34,13 +34,19 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Crear archivo google-services.json
-        run: echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
+        run: |
+          cat > android/app/google-services.json << 'GOOGLE_SERVICES_EOF'
+          ${{ secrets.GOOGLE_SERVICES_JSON }}
+          GOOGLE_SERVICES_EOF
 
       - name: Crear archivo .env.local
-        run: echo "${{ secrets.ENV_LOCAL }}" > .env.local
+        run: |
+          cat > .env.local << 'ENV_LOCAL_EOF'
+          ${{ secrets.ENV_LOCAL }}
+          ENV_LOCAL_EOF
 
-      - name: Construir la web (Next.js static export)
-        run: npm run build
+      - name: Construir la web (Next.js static export via build-mobile.sh)
+        run: bash scripts/build-mobile.sh
 
       - name: Sincronizar Capacitor
         run: npx cap sync android
@@ -49,18 +55,8 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug
 
-      - name: Construir APK de release (sin firmar)
-        working-directory: android
-        run: ./gradlew assembleRelease
-
       - name: Subir APK debug como artifact
         uses: actions/upload-artifact@v4
         with:
           name: archii-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
-
-      - name: Subir APK release como artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: archii-release-apk
-          path: android/app/build/outputs/apk/release/*.apk
