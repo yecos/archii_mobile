@@ -1,0 +1,16 @@
+          {/* ===== GLOBAL FILES ===== */}
+          {screen === 'files' && (<div className="animate-fadeIn">
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+              <div className="text-[15px] font-semibold mb-3">Planos y archivos</div>
+              <div className="text-center py-12 text-[var(--af-text3)]">
+                <div className="text-3xl mb-2">📂</div>
+                <div className="text-sm mb-3">Sube archivos desde la vista de cada proyecto</div>
+                <div className="text-xs">Selecciona un proyecto para ver y gestionar sus archivos</div>
+                {projects.length > 0 && (<div className="mt-4 flex flex-wrap gap-2 justify-center">
+                  {projects.map(p => (<button key={p.id} className="text-xs px-3 py-1.5 rounded-lg bg-[var(--af-bg3)] border border-[var(--border)] text-[var(--muted-foreground)] cursor-pointer hover:text-[var(--foreground)] hover:border-[var(--input)] transition-all" onClick={() => { setSelectedProjectId(p.id); setForms(p => ({ ...p, detailTab: 'Archivos' })); navigateTo('projectDetail', p.id); }}>{p.data.name}</button>))}
+                </div>)}
+              </div>
+            </div>
+          </div>)}
+
+          {/* GLOBAL OBRA */}

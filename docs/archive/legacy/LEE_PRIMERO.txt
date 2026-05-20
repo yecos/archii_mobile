@@ -1,0 +1,120 @@
+================================================================================
+         LEE PRIMERO - PROTOCOLO OBLIGATORIO ANTES DE CUALQUIER CAMBIO
+================================================================================
+
+ATENCION: ESTE ARCHIVO DEBE LEERSE COMPLETO ANTES DE HACER CUALQUIER COSA.
+SI NO LEES ESTE ARCHIVO Y EL INSTRUCTIVO_BITACORA.txt, NO TIENES PERMISO
+PARA TOCAR EL CODIGO DE ESTE PROYECTO.
+
+================================================================================
+PASOS OBLIGATORIOS AL INICIAR CUALQUIER SESION
+================================================================================
+
+  1. LEER este archivo completo (LEE_PRIMERO.txt)
+  2. LEER INSTRUCTIVO_BITACORA.txt completo (es la fuente de verdad)
+  3. LEER worklog.md para ver que hicieron las sesiones anteriores
+  4. EJECUTAR: git pull origin main
+  5. REVISAR la bitacora (PARTE 4 del instructivo) para entender el estado actual
+  6. NUNCA asumir que algo funciona — verificar en el codigo
+  7. NUNCA escribir codigo sin entender el estado actual del proyecto
+
+  SI NO CUMPLES ESTOS PASOS, PUEDES CAUSAR:
+  - Perdida de datos de usuarios
+  - Romper la app en produccion
+  - Sobreescribir trabajo de otras sesiones
+  - Errores criticos que toman horas resolver
+
+================================================================================
+REGLAS CRITICAS DE TRABAJO CONCURRENTE
+================================================================================
+
+  [LOCK] ANTES DE TOCAR CUALQUIER ARCHIVO:
+  ├── Hacer git pull origin main PRIMERO
+  ├── Si el archivo fue modificado por otra sesion, NO sobreescribir
+  ├── Leer el archivo actual ANTES de modificarlo
+  └── Si hay conflictos: avisar al usuario y NO resolver con force push
+
+  [SAFE] PROTECCION DE DATOS:
+  ├── NUNCA eliminar datos de Firestore sin confirmacion del usuario
+  ├── NUNCA modificar el array 'members' de un tenant sin saber que contiene
+  ├── NUNCA tocar la coleccion 'users' directamente (solo lectura)
+  ├── Siempre hacer tag de respaldo antes de cambios grandes:
+  │     git tag -a "backup-pre-[descripcion]-[fecha]" -m "Respaldo"
+  │     git push origin --tags
+  └── Commits cada 15-30 min + push cada hora
+
+  [COMM] COMUNICACION ENTRE SESIONES:
+  ├── Toda sesion DEBE registrar su trabajo en INSTRUCTIVO_BITACORA.txt
+  ├── Toda sesion DEBE registrar su trabajo en worklog.md
+  ├── Documentar: que se hizo, que archivos se tocaron, que commit se hizo
+  ├── Al finalizar: commit + push OBLIGATORIO
+  └── NUNCA cerrar sesion sin documentar
+
+  [DEPLOY] PROTECCION DE PRODUCCION:
+  ├── NUNCA hacer push a main sin verificar que build pasa localmente
+  ├── Ejecutar: npx next lint && npx next build (o bun equivalent)
+  ├── Vercel tiene limite de 100 deploys/dia — no desperdiciar
+  ├── Si algo se rompe en produccion: hacer hotfix inmediato
+  └── Documentar todo incidente en la bitacora
+
+================================================================================
+ARCHIVOS CRITICOS — ZONA DE MAXIMO RIESGO
+================================================================================
+
+  Estos archivos son compartidos entre sesiones. Tocarlos puede causar
+  conflictos severos. REQUIEREN git pull inmediato antes de modificar:
+
+  CRITICOS (nunca tocar sin git pull + revision):
+  ├── src/contexts/AppContext.tsx     — estado principal de la app
+  ├── src/lib/types.ts               — tipos globales
+  ├── src/lib/helpers.ts             — funciones compartidas
+  ├── src/lib/firebase-admin.ts      — config Firebase server-side
+  ├── src/lib/firebase-service.ts    — config Firebase client-side
+  ├── src/app/HomeContent.tsx        — navegacion principal
+  ├── src/app/layout.tsx             — layout raiz
+  ├── INSTRUCTIVO_BITACORA.txt       — documentacion oficial
+  └── package.json                   — dependencias
+
+  IMPORTANTE: Si otra sesion esta trabajando en estos archivos al mismo
+  tiempo, COORDINAR antes de modificar. No hacer cambios simultaneos
+  en el mismo archivo desde sesiones diferentes.
+
+================================================================================
+INFORMACION DEL PROYECTO
+================================================================================
+
+  Proyecto: ArchiFlow (Archi Project)
+  Repositorio: https://github.com/yecos/archii
+  Deploy: https://archii-theta.vercel.app
+  Framework: Next.js 16 + React 19 + TypeScript + Tailwind CSS 4
+  Base de datos: Firebase Firestore (proyecto: archiflow-prod-2026)
+  Autenticacion: Firebase Auth
+  IA: z-ai-web-dev-sdk + OpenAI
+  Arquitectura: Multi-tenant (aislamiento por tenantId)
+
+  Este proyecto usa Firebase Compat SDK v10.12.0 del lado del cliente.
+  Config serverExternalPackages: ['firebase-admin', 'sharp']
+
+================================================================================
+FORMATO DE REGISTRO EN WORKLOG
+================================================================================
+
+  Cada sesion DEBE agregar una entrada a worklog.md con este formato:
+
+  ---
+  Task ID: [numero correlativo]
+  Agent: [nombre del agente/sesion]
+  Task: [descripcion de la tarea]
+
+  Work Log:
+  - [paso 1]
+  - [paso 2]
+  - ...
+
+  Stage Summary:
+  - [resultados clave]
+  ---
+
+================================================================================
+FIN DE LEE_PRIMERO — AHORA VE A LEER INSTRUCTIVO_BITACORA.txt
+================================================================================

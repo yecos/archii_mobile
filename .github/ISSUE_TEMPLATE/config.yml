@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question
+    url: https://github.com/yecos/archii/discussions
+    about: Ask a question about Archii usage or development
+  - name: Security Vulnerability
+    url: https://github.com/yecos/archii/security/advisories/new
+    about: Report a security vulnerability privately

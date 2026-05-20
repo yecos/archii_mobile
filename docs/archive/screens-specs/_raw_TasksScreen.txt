@@ -1,0 +1,75 @@
+          {screen === 'tasks' && (<div className="animate-fadeIn">
+            <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+              <div className="flex gap-1 bg-[var(--af-bg3)] rounded-lg p-1">
+                <button className={`px-3 py-1.5 rounded-md text-[13px] cursor-pointer transition-all ${(forms.taskView || 'list') === 'list' ? 'bg-[var(--card)] text-[var(--foreground)] font-medium shadow-sm' : 'text-[var(--muted-foreground)]'}`} onClick={() => setForms(p => ({ ...p, taskView: 'list' }))}>Lista</button>
+                <button className={`px-3 py-1.5 rounded-md text-[13px] cursor-pointer transition-all ${(forms.taskView || 'list') === 'kanban' ? 'bg-[var(--card)] text-[var(--foreground)] font-medium shadow-sm' : 'text-[var(--muted-foreground)]'}`} onClick={() => setForms(p => ({ ...p, taskView: 'kanban' }))}>Kanban</button>
+              </div>
+              <button className="flex items-center gap-1.5 bg-[var(--af-accent)] text-background px-3.5 py-2 rounded-lg text-[13px] font-semibold cursor-pointer border-none hover:bg-[var(--af-accent2)] transition-colors" onClick={() => { setForms(p => ({ ...p, taskTitle: '', taskDue: new Date().toISOString().split('T')[0] })); openModal('task'); }}>
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva tarea
+              </button>
+            </div>
+            {loading && (
+              <div className="space-y-2">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 flex items-center gap-3 animate-pulse">
+                    <div className="w-4 h-4 rounded-full bg-[var(--af-bg4)]" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 w-3/4 bg-[var(--af-bg4)] rounded" />
+                      <div className="h-2 w-1/2 bg-[var(--af-bg4)] rounded" />
+                    </div>
+                    <div className="h-5 w-16 bg-[var(--af-bg4)] rounded-full" />
+                  </div>
+                ))}
+              </div>
+            )}
+            {!loading && (forms.taskView || 'list') === 'list' ? (
+              tasks.length === 0 ? <div className="text-center py-16 text-[var(--af-text3)]"><div className="text-4xl mb-3">✅</div><div className="text-[15px] font-medium text-[var(--muted-foreground)]">Sin tareas</div></div> :
+              ['Alta', 'Media', 'Baja'].map(prio => {
+                const group = tasks.filter(t => t.data.priority === prio);
+                if (!group.length) return null;
+                return (<div key={prio} className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 mb-4">
+                  <div className={`text-xs font-semibold mb-3 ${prio === 'Alta' ? 'text-red-400' : prio === 'Media' ? 'text-amber-400' : 'text-emerald-400'}`}>{prio === 'Alta' ? '🔴' : prio === 'Media' ? '🟡' : '🟢'} Prioridad {prio}</div>
+                  {group.map(t => {
+                    const proj = projects.find(p => p.id === t.data.projectId);
+                    return (<div key={t.id} className="flex items-start gap-3 py-2.5 border-b border-[var(--border)] last:border-0">
+                      <div className="w-4 h-4 rounded border border-[var(--input)] flex-shrink-0 mt-0.5 cursor-pointer flex items-center justify-center hover:border-[var(--af-accent)] ${t.data.status === 'Completado' ? 'bg-emerald-500 border-emerald-500' : ''}" onClick={() => toggleTask(t.id, t.data.status)}>{t.data.status === 'Completado' && <span className="text-white text-[10px] font-bold">✓</span>}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-[13.5px] font-medium ${t.data.status === 'Completado' ? 'line-through text-[var(--af-text3)]' : ''}`}>{t.data.title}</div>
+                        <div className="text-[11px] text-[var(--af-text3)] mt-1 flex items-center gap-2 flex-wrap">
+                          {proj && <span>{proj.data.name}</span>}
+                          {t.data.dueDate && <span>📅 {fmtDate(t.data.dueDate)}</span>}
+                          {t.data.assigneeId && <span className="flex items-center gap-1"><span className={`w-4 h-4 rounded-full text-[7px] font-semibold flex items-center justify-center ${avatarColor(t.data.assigneeId)}`}>{getInitials(getUserName(t.data.assigneeId))}</span>{getUserName(t.data.assigneeId)}</span>}
+                        </div>
+                      </div>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${taskStColor(t.data.status)}`}>{t.data.status}</span>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button className="text-xs px-2.5 py-1.5 rounded bg-[var(--af-accent)]/10 text-[var(--af-accent)] cursor-pointer hover:bg-[var(--af-accent)]/20" onClick={() => openEditTask(t)}>✎</button>
+                        <button className="text-xs px-2.5 py-1.5 rounded bg-red-500/10 text-red-400 cursor-pointer" onClick={() => deleteTask(t.id)}>✕</button>
+                      </div>
+                    </div>);
+                  })}
+                </div>);
+              })
+            ) : (
+              <div className="flex gap-3.5 overflow-x-auto pb-2 snap-x snap-mandatory">
+                {['Por hacer', 'En progreso', 'Revision', 'Completado'].map(status => {
+                  const col = tasks.filter(t => t.data.status === status);
+                  const dot = status === 'Completado' ? 'bg-emerald-500' : status === 'En progreso' ? 'bg-blue-500' : status === 'Revision' ? 'bg-amber-500' : 'bg-[var(--af-text3)]';
+                  return (<div key={status} className="flex-shrink-0 w-[240px] snap-start bg-[var(--af-bg3)] rounded-xl p-3.5">
+                    <div className="flex items-center gap-2 mb-3"><div className={`w-2 h-2 rounded-full ${dot}`} /><span className="text-[13px] font-semibold">{status}</span><span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--af-bg4)] text-[var(--muted-foreground)]">{col.length}</span></div>
+                    {col.map(t => {
+                      const proj = projects.find(p => p.id === t.data.projectId);
+                      return (<div key={t.id} className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-3 mb-2 cursor-pointer hover:border-[var(--input)] hover:-translate-y-0.5 transition-all" onClick={() => openEditTask(t)}>
+                        <div className="text-[13px] font-medium mb-1">{t.data.title}</div>
+                        <div className="text-[11px] text-[var(--af-text3)] mb-2">{proj?.data.name || '—'}</div>
+                        <div className="flex justify-between items-center">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${prioColor(t.data.priority)}`}>{t.data.priority}</span>
+                          {t.data.assigneeId && <span className={`w-4 h-4 rounded-full text-[7px] font-semibold flex items-center justify-center ${avatarColor(t.data.assigneeId)}`}>{getInitials(getUserName(t.data.assigneeId))}</span>}
+                        </div>
+                      </div>);
+                    })}
+                  </div>);
+                })}
+              </div>
+            )}
+          </div>)}

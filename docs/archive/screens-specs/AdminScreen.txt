@@ -1,0 +1,385 @@
+          {/* ===== ADMIN PANEL ===== */}
+          {screen === 'admin' && !isAdmin && (<div className="animate-fadeIn p-6 text-center">
+            <div className="text-4xl mb-3">🔒</div>
+            <div className="text-lg font-semibold">Acceso restringido</div>
+            <div className="text-sm text-[var(--muted-foreground)] mt-1">Solo administradores y directores pueden acceder a este panel</div>
+          </div>)}
+
+          {screen === 'admin' && isAdmin && (<div className="animate-fadeIn p-4 sm:p-6">
+            {/* Sub-tabs */}
+            <div className="flex gap-1 mb-5 overflow-x-auto pb-1 -mx-1 px-1">
+              {[{ id: 'timeline' as const, label: '📊 Timeline' }, { id: 'dashboard' as const, label: '📈 Dashboard' }, { id: 'permissions' as const, label: '🔐 Permisos' }, { id: 'team' as const, label: '👥 Equipo' }].map(tab => (
+                <button key={tab.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap cursor-pointer transition-all ${adminTab === tab.id ? 'bg-[var(--af-accent)] text-background' : 'bg-[var(--af-bg3)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}`} onClick={() => setAdminTab(tab.id)}>{tab.label}</button>
+              ))}
+            </div>
+
+            {/* ===== TIMELINE TAB ===== */}
+            {adminTab === 'timeline' && (() => {
+              const days = getGanttDays();
+              const todayOffset = Math.round((new Date(new Date().toDateString()) - days[0]) / 86400000);
+              const teamWithTasks = teamUsers.map(m => {
+                const mt = tasks.filter(t => t.data.assigneeId === m.id && t.data.status !== 'Completado' && t.data.dueDate).sort((a,b) => new Date(a.data.dueDate || 0) - new Date(b.data.dueDate || 0));
+                return { ...m, tasks: mt };
+              });
+              const totalActive = teamWithTasks.reduce((s,m) => s + m.tasks.length, 0);
+              const totalHours = activeTasks.length; // simplified
+              const membersWithOverlaps = teamWithTasks.filter(m => findOverlaps(m.tasks).size > 0);
+              const uniqueProjs = [...new Set(activeTasks.map(t => t.data.projectId).filter(Boolean))];
+
+              return (<div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-semibold">📊 Admin Timeline</h3>
+                    <p className="text-xs text-[var(--muted-foreground)]">Vista de tareas del equipo en el tiempo</p>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer bg-[var(--af-bg3)] border border-[var(--border)] hover:bg-[var(--af-bg4)] transition-all" onClick={() => setAdminWeekOffset(p => p - 1)}>◀ Anterior</button>
+                    <button className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer bg-[var(--af-bg3)] border border-[var(--border)] hover:bg-[var(--af-bg4)] transition-all" onClick={() => setAdminWeekOffset(0)}>Hoy</button>
+                    <button className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer bg-[var(--af-bg3)] border border-[var(--border)] hover:bg-[var(--af-bg4)] transition-all" onClick={() => setAdminWeekOffset(p => p + 1)}>Siguiente ▶</button>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]"><div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide font-semibold">Colaboradores</div><div className="text-2xl font-bold mt-1">{teamWithTasks.length}</div></div>
+                  <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]"><div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide font-semibold">Tareas Activas</div><div className="text-2xl font-bold text-blue-400 mt-1">{totalActive}</div></div>
+                  <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]"><div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide font-semibold">Con Traslapes</div><div className="text-2xl font-bold text-red-400 mt-1">{membersWithOverlaps.length}</div></div>
+                  <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]"><div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide font-semibold">Proyectos</div><div className="text-2xl font-bold text-amber-400 mt-1">{uniqueProjs.length}</div></div>
+                </div>
+
+                {/* Legend */}
+                <div className="bg-[var(--af-bg3)] rounded-xl p-3 border border-[var(--border)] flex flex-wrap items-center gap-3">
+                  <span className="text-[10px] uppercase tracking-wide font-semibold text-[var(--muted-foreground)] mr-1">Proyectos:</span>
+                  {projects.slice(0, 6).map(p => (<div key={p.id} className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm" style={{ backgroundColor: getProjectColor(p.id) }} /><span className="text-[11px] text-[var(--foreground)]">{p.data.name.substring(0, 20)}</span></div>))}
+                  <div className="w-px h-4 bg-[var(--border)]" />
+                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-[var(--foreground)]" /><span className="text-[11px]">Hoy</span></div>
+                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-red-400/30 border border-red-400" /><span className="text-[11px]">Traslape</span></div>
+                </div>
+
+                {/* Gantt Chart */}
+                <div className="bg-[var(--af-bg3)] rounded-xl border border-[var(--border)] overflow-hidden">
+                  <div className="md:hidden text-center py-8 text-sm text-[var(--muted-foreground)]">El cronograma detallado está disponible en vista de escritorio.</div>
+                  <div className="hidden md:block overflow-x-auto">
+                    <div className="min-w-[1200px]">
+                      {/* Header */}
+                      <div className="flex border-b-2 border-[var(--border)] bg-[var(--card)]" style={{ height: 48 }}>
+                        <div className="w-[180px] min-w-[180px] flex items-center px-3 text-[10px] uppercase tracking-wide font-semibold text-[var(--muted-foreground)] border-r border-[var(--border)]">Equipo</div>
+                        <div className="flex-1 flex">
+                          {days.map((day, i) => {
+                            const isWknd = day.getDay() === 0 || day.getDay() === 6;
+                            const isToday = day.toDateString() === new Date().toDateString();
+                            return (<div key={i} className={`w-[72px] min-w-[72px] flex flex-col items-center justify-center border-r border-[var(--border)]/50 ${isWknd ? 'bg-[var(--af-bg4)]' : ''}`}>
+                              <span className={`text-[9px] ${isWknd ? 'text-[var(--muted-foreground)]/50' : 'text-[var(--muted-foreground)]'}`}>{GANTT_DAY_NAMES[(day.getDay() + 6) % 7]}</span>
+                              {isToday ? <span className="text-[11px] font-bold bg-[var(--foreground)] text-[var(--card)] w-5 h-5 rounded-full flex items-center justify-center">{day.getDate()}</span> : <span className={`text-[11px] font-semibold ${isWknd ? 'text-[var(--muted-foreground)]/50' : 'text-[var(--foreground)]'}`}>{day.getDate()}</span>}
+                            </div>);
+                          })}
+                        </div>
+                      </div>
+                      {/* Rows */}
+                      {teamWithTasks.map(member => {
+                        const rows = buildGanttRows(member.tasks);
+                        const overlapIds = findOverlaps(member.tasks);
+                        const hasOverlap = overlapIds.size > 0;
+                        const rowH = rows.length > 1 ? rows.length * 40 + 8 : 40;
+                        return (<div key={member.id} className="flex border-b border-[var(--border)]/50 hover:bg-[var(--af-bg4)]/30">
+                          <div className="w-[180px] min-w-[180px] flex items-center gap-2 px-3 border-r border-[var(--border)]" style={{ minHeight: rowH }}>
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-semibold flex-shrink-0 ${avatarColor(member.id)}`}>{getInitials(member.data?.name || '?')}</div>
+                            <div className="min-w-0">
+                              <div className="text-[11px] font-semibold truncate">{member.data?.name || 'Sin nombre'}</div>
+                              <div className="text-[9px] text-[var(--muted-foreground)]">{member.data?.role || 'Miembro'} · {member.tasks.length} tareas</div>
+                            </div>
+                            {hasOverlap && <span className="ml-auto text-[10px] text-red-400">⚠</span>}
+                          </div>
+                          <div className="flex-1 relative" style={{ minHeight: rowH }}>
+                            {/* Weekend backgrounds */}
+                            {days.map((day, i) => { if (day.getDay() === 0 || day.getDay() === 6) return <div key={i} className="absolute top-0 bottom-0 bg-[var(--af-bg4)]/50" style={{ left: `${(i/GANTT_DAYS)*100}%`, width: `${(1/GANTT_DAYS)*100}%` }} />; return null; })}
+                            {/* Today line */}
+                            {todayOffset >= 0 && todayOffset <= GANTT_DAYS && <div className="absolute top-0 bottom-0 w-0.5 bg-[var(--foreground)] z-20" style={{ left: `${((todayOffset + 0.5) / GANTT_DAYS) * 100}%` }} />}
+                            {/* Task bars */}
+                            {rows.map((row, rIdx) => row.map(task => {
+                              const pos = getTaskBar(task, days);
+                              if (!pos) return null;
+                              const isOvlp = overlapIds.has(task.id);
+                              const proj = projects.find(p => p.id === task.data.projectId);
+                              const pColor = proj ? getProjectColor(task.data.projectId) : '#6b7280';
+                              const top = rIdx * 40 + 4;
+                              return (<div key={task.id} className="absolute h-[28px] rounded-md flex items-center gap-1 px-1.5 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg hover:z-30 z-10 overflow-hidden" style={{ left: `${pos.left}%`, width: `${pos.width}%`, top, backgroundColor: isOvlp ? getProjectColorLight(task.data.projectId) : pColor, border: isOvlp ? `1.5px solid ${pColor}` : 'none', color: isOvlp ? pColor : 'white' }} onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setAdminTooltipPos({ x: Math.min(r.left, window.innerWidth - 280), y: r.top }); setAdminTooltipTask(task); }} onMouseLeave={() => setAdminTooltipTask(null)}>
+                                <div className="w-[3px] h-full flex-shrink-0 rounded-sm" style={{ backgroundColor: isOvlp ? pColor : 'rgba(255,255,255,0.3)' }} />
+                                <span className="text-[9px] font-medium truncate flex-1">{task.data.title}</span>
+                              </div>);
+                            }))}
+                            {member.tasks.length === 0 && <div className="absolute inset-0 flex items-center justify-center text-[11px] text-[var(--muted-foreground)]/50 italic">Sin tareas</div>}
+                          </div>
+                        </div>);
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tooltip */}
+                {adminTooltipTask && (() => {
+                  const t = adminTooltipTask;
+                  const proj = projects.find(p => p.id === t.data.projectId);
+                  const sc = GANTT_STATUS_CFG[t.data.status] || { label: t.data.status, color: '#6b7280' };
+                  const pc = GANTT_PRIO_CFG[t.data.priority] || { label: t.data.priority || '', bg: '#f1f5f9', color: '#475569' };
+                  return (
+                  /* Admin tooltip — hidden on mobile (touch has no hover) */
+                  <div key={t.id} className="hidden md:block fixed z-[200] bg-[var(--foreground)] text-[var(--card)] rounded-lg p-3 text-[11px] max-w-[280px] shadow-xl pointer-events-none" style={{ left: adminTooltipPos.x, top: adminTooltipPos.y - 10, transform: 'translateY(-100%)' }}>
+                    <div className="flex gap-2"><span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold" style={{ backgroundColor: pc.bg + '33', color: pc.color }}>{pc.label}</span><span className="text-[9px] text-[var(--muted-foreground)]">{sc.label}</span></div>
+                    <div className="text-[12px] font-semibold mt-1">{t.data.title}</div>
+                    {proj && <div className="text-[10px] text-[var(--muted-foreground)] mt-0.5">{proj.data.name}</div>}
+                    <div className="flex gap-3 mt-1 text-[10px] text-[var(--muted-foreground)]">
+                      {t.data.startDate && <span>{fmtDate(t.data.startDate)}</span>}
+                      {t.data.dueDate && <span>→ {fmtDate(t.data.dueDate)}</span>}
+                    </div>
+                    <div className="text-[10px] text-[var(--muted-foreground)] mt-0.5">👤 {getUserName(t.data.assigneeId)}</div>
+                  </div>);
+                })()}
+
+                {/* Overlap Alerts */}
+                {membersWithOverlaps.length > 0 && (<div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3"><span className="text-sm font-semibold text-red-400">⚠️ Alertas de Carga</span></div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {membersWithOverlaps.map(m => {
+                      const ovlTasks = m.tasks.filter(t => findOverlaps(m.tasks).has(t.id));
+                      return (<div key={m.id} className="bg-[var(--card)] rounded-lg p-3 border border-red-500/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-semibold ${avatarColor(m.id)}`}>{getInitials(m.data?.name || '?')}</div>
+                          <span className="text-xs font-semibold">{m.data?.name}</span>
+                          <span className="ml-auto text-[10px] text-red-400 font-semibold">{ovlTasks.length} traslape{ovlTasks.length > 1 ? 's' : ''}</span>
+                        </div>
+                        {ovlTasks.map(t => (<div key={t.id} className="flex items-center gap-2 py-1">
+                          <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: getProjectColor(t.data.projectId) }} />
+                          <span className="text-[10px] truncate flex-1">{t.data.title}</span>
+                        </div>))}
+                      </div>);
+                    })}
+                  </div>
+                </div>)}
+              </div>);
+            })()}
+
+            {/* ===== DASHBOARD TAB ===== */}
+            {adminTab === 'dashboard' && (<div className="space-y-4">
+              <h3 className="text-lg font-semibold">📈 Dashboard Admin</h3>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]"><div className="text-xs text-[var(--muted-foreground)]">Total Tareas</div><div className="text-2xl font-bold mt-1">{tasks.length}</div></div>
+                <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]"><div className="text-xs text-[var(--muted-foreground)]">En Progreso</div><div className="text-2xl font-bold text-blue-400 mt-1">{tasks.filter(t => t.data.status === 'En progreso').length}</div></div>
+                <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]"><div className="text-xs text-[var(--muted-foreground)]">Completadas</div><div className="text-2xl font-bold text-emerald-400 mt-1">{completedTasks.length}</div></div>
+                <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]"><div className="text-xs text-[var(--muted-foreground)]">Vencidas</div><div className="text-2xl font-bold text-red-400 mt-1">{overdueTasks.length}</div></div>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Upcoming */}
+                <div className="bg-[var(--af-bg3)] rounded-xl border border-[var(--border)] p-4">
+                  <h4 className="text-sm font-semibold mb-3">📅 Próximas Entregas</h4>
+                  {activeTasks.filter(t => t.data.dueDate).sort((a,b) => new Date(a.data.dueDate) - new Date(b.data.dueDate)).slice(0, 8).map(t => {
+                    const proj = projects.find(p => p.id === t.data.projectId);
+                    const sc = GANTT_STATUS_CFG[t.data.status] || { color: '#6b7280', label: t.data.status };
+                    const isOverdue = t.data.dueDate && new Date(t.data.dueDate) < new Date(new Date().toDateString());
+                    return (<div key={t.id} className="flex items-center gap-3 py-2 border-b border-[var(--border)]/50 last:border-b-0">
+                      <div className={`w-3 h-3 rounded-full flex-shrink-0`} style={{ backgroundColor: sc.color }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium truncate">{t.data.title}</div>
+                        <div className="text-[10px] text-[var(--muted-foreground)]">{proj?.data.name || '—'} · {getUserName(t.data.assigneeId)}</div>
+                      </div>
+                      <span className={`text-xs flex-shrink-0 ${isOverdue ? 'text-red-400 font-semibold' : 'text-[var(--muted-foreground)]'}`}>{t.data.dueDate ? fmtDate(t.data.dueDate) : ''}</span>
+                    </div>);
+                  })}
+                </div>
+                {/* Projects overview */}
+                <div className="bg-[var(--af-bg3)] rounded-xl border border-[var(--border)] p-4">
+                  <h4 className="text-sm font-semibold mb-3">🏗️ Proyectos</h4>
+                  {projects.map(p => {
+                    const pTasks = tasks.filter(t => t.data.projectId === p.id);
+                    const done = pTasks.filter(t => t.data.status === 'Completado').length;
+                    return (<div key={p.id} className="py-2.5 border-b border-[var(--border)]/50 last:border-b-0">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm" style={{ backgroundColor: getProjectColor(p.id) }} /><span className="text-xs font-medium">{p.data.name}</span></div>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${statusColor(p.data.status)}`}>{p.data.status}</span>
+                      </div>
+                      <div className="flex items-center gap-2"><div className="flex-1 h-1.5 bg-[var(--border)] rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${p.data.progress || 0}%`, backgroundColor: getProjectColor(p.id) }} /></div><span className="text-[10px] text-[var(--muted-foreground)]">{p.data.progress || 0}%</span></div>
+                      <div className="text-[10px] text-[var(--muted-foreground)] mt-1">{done}/{pTasks.length} tareas</div>
+                    </div>);
+                  })}
+                </div>
+              </div>
+              {/* Team productivity */}
+              <div className="bg-[var(--af-bg3)] rounded-xl border border-[var(--border)] p-4">
+                <h4 className="text-sm font-semibold mb-3">👥 Productividad del Equipo</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {teamUsers.map(m => {
+                    const mTasks = tasks.filter(t => t.data.assigneeId === m.id);
+                    const mActive = mTasks.filter(t => t.data.status !== 'Completado');
+                    const mDone = mTasks.filter(t => t.data.status === 'Completado');
+                    const pct = mTasks.length > 0 ? Math.round((mDone.length / mTasks.length) * 100) : 0;
+                    return (<div key={m.id} className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-semibold ${avatarColor(m.id)}`}>{getInitials(m.data?.name || '?')}</div>
+                        <div className="min-w-0"><div className="text-xs font-semibold truncate">{m.data?.name}</div><div className="text-[10px] text-[var(--muted-foreground)]">{m.data?.role || 'Miembro'}</div></div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div><div className="text-sm font-bold text-blue-400">{mActive.length}</div><div className="text-[9px] text-[var(--muted-foreground)]">Activas</div></div>
+                        <div><div className="text-sm font-bold text-emerald-400">{mDone.length}</div><div className="text-[9px] text-[var(--muted-foreground)]">Hechas</div></div>
+                        <div><div className="text-sm font-bold">{pct}%</div><div className="text-[9px] text-[var(--muted-foreground)]">Completado</div></div>
+                      </div>
+                    </div>);
+                  })}
+                </div>
+              </div>
+            </div>)}
+
+            {/* ===== PERMISSIONS TAB ===== */}
+            {adminTab === 'permissions' && (<div className="space-y-4">
+              <h3 className="text-lg font-semibold">🔐 Permisos y Roles</h3>
+              <div className="flex gap-1 mb-4">
+                {[{ id: 'roles', label: '👥 Roles' }, { id: 'permissions', label: '🔑 Permisos por rol' }].map(tab => (
+                  <button key={tab.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all ${adminPermSection === tab.id ? 'bg-[var(--af-accent)] text-background' : 'bg-[var(--af-bg3)] text-[var(--muted-foreground)]'}`} onClick={() => setAdminPermSection(tab.id)}>{tab.label}</button>
+                ))}
+              </div>
+
+              {adminPermSection === 'roles' && (<div className="space-y-4">
+                {/* Role description */}
+                <div className="bg-[var(--af-bg3)] rounded-xl border border-[var(--border)] p-4">
+                  <h4 className="text-sm font-semibold mb-3">Roles del Sistema</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {USER_ROLES.map(role => {
+                      const count = teamUsers.filter(u => u.data?.role === role).length;
+                      return (<div key={role} className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">{ROLE_ICONS[role]}</span>
+                            <div><div className="text-xs font-semibold">{role}</div><div className="text-[10px] text-[var(--muted-foreground)]">{count} usuario{count !== 1 ? 's' : ''}</div></div>
+                          </div>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${ROLE_COLORS[role]}`}>{role}</span>
+                        </div>
+                      </div>);
+                    })}
+                  </div>
+                </div>
+                {/* Team members with role management */}
+                <div className="bg-[var(--af-bg3)] rounded-xl border border-[var(--border)] p-4">
+                  <h4 className="text-sm font-semibold mb-3">Gestionar Roles</h4>
+                  <div className="space-y-2">
+                    {teamUsers.map(u => {
+                      const canChange = isAdmin && u.id !== authUser?.uid;
+                      return (<div key={u.id} className="flex items-center gap-3 bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold ${avatarColor(u.id)}`}>{getInitials(u.data?.name || '?')}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-semibold truncate">{u.data?.name}{u.id === authUser?.uid && <span className="text-[9px] text-[var(--muted-foreground)] ml-1">(Tú)</span>}</div>
+                          <div className="text-[10px] text-[var(--muted-foreground)] truncate">{u.data?.email}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full border flex items-center gap-1" style={{ borderColor: 'var(--border)' }}>
+                            <span>{ROLE_ICONS[u.data?.role || 'Miembro']}</span>
+                            {u.data?.role || 'Miembro'}
+                          </span>
+                          {canChange && (<select className="bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-2 py-1 text-[10px] text-[var(--foreground)] outline-none cursor-pointer" value={u.data?.role || 'Miembro'} onChange={e => updateUserRole(u.id, e.target.value)}>
+                            {USER_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                          </select>)}
+                        </div>
+                      </div>);
+                    })}
+                  </div>
+                </div>
+              </div>)}
+
+              {adminPermSection === 'permissions' && (<div className="space-y-4">
+                <div className="bg-[var(--af-bg3)] rounded-xl border border-[var(--border)] p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold">Permisos por Rol</h4>
+                    <span className="text-[10px] text-[var(--muted-foreground)]">Los cambios se guardan automáticamente</span>
+                  </div>
+                  <div className="overflow-x-auto -mx-4 px-4 pb-2">
+                    <table className="w-full text-[11px]">
+                      <thead><tr className="border-b border-[var(--border)]">
+                        <th className="text-left py-2 px-2 text-[var(--muted-foreground)] font-medium sticky left-0 bg-[var(--af-bg3)] min-w-[120px]">Permiso</th>
+                        {USER_ROLES.map(r => <th key={r} className="text-center py-2 px-1.5 text-[var(--muted-foreground)] font-medium whitespace-nowrap min-w-[70px]">{ROLE_ICONS[r]} {r}</th>)}
+                      </tr></thead>
+                      <tbody>
+                        {Object.entries(rolePerms).map(([permName, perms], i) => (<tr key={i} className="border-b border-[var(--border)]/50">
+                          <td className="py-2 px-2 font-medium sticky left-0 bg-[var(--af-bg3)]">{permName}</td>
+                          {USER_ROLES.map(r => {
+                            const has = perms.includes(r);
+                            return (<td key={r} className="py-2 px-1.5 text-center">
+                              <button
+                                className={`w-6 h-6 rounded-md flex items-center justify-center mx-auto cursor-pointer border-none transition-all text-[13px] ${has ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/5 text-red-400/30 hover:bg-red-500/10'}`}
+                                onClick={() => toggleRolePerm(permName, r)}
+                                title={has ? 'Quitar permiso' : 'Dar permiso'}
+                              >{has ? '✓' : '✕'}</button>
+                            </td>);
+                          })}
+                        </tr>))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>)}
+            </div>)}
+
+            {/* ===== TEAM TAB ===== */}
+            {adminTab === 'team' && (<div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold">👥 Equipo ({teamUsers.length})</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {teamUsers.map(m => {
+                  const mTasks = activeTasks.filter(t => t.data.assigneeId === m.id);
+                  const mOverdue = mTasks.filter(t => t.data.dueDate && new Date(t.data.dueDate) < new Date(new Date().toDateString()));
+                  const isSelf = m.id === authUser?.uid;
+                  const isAdmin = (m.data?.role === 'Admin') || ADMIN_EMAILS.includes(m.data?.email || '');
+                  return (<div key={m.id} className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)] relative group">
+                    {/* Delete button */}
+                    {isAdmin && !isSelf && (
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`¿Eliminar a ${m.data?.name || m.data?.email}? Esta acción no se puede deshacer.`)) return;
+                          try {
+                            const db = getFirebase().firestore();
+                            await db.collection('users').doc(m.id).delete();
+                            showToast(`${m.data?.name || m.data?.email} eliminado del equipo`);
+                          } catch (err) { showToast('Error al eliminar usuario', 'error'); }
+                        }}
+                        className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer"
+                        title="Eliminar del equipo"
+                      >
+                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                      </button>
+                    )}
+                    {isSelf && (
+                      <div className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-[var(--card)] text-[var(--muted-foreground)] flex items-center justify-center" title="No puedes eliminarte a ti mismo">
+                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${avatarColor(m.id)}`}>{getInitials(m.data?.name || '?')}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold truncate">{m.data?.name}</div>
+                        <div className="text-[10px] text-[var(--muted-foreground)]">{m.data?.role || 'Miembro'}{m.data?.email ? ` · ${m.data.email}` : ''}</div>
+                      </div>
+                      <span className="text-[10px] bg-[var(--card)] px-2 py-0.5 rounded-full border border-[var(--border)]">{mTasks.length} tareas</span>
+                    </div>
+                    {mOverdue.length > 0 && (<div className="text-[10px] text-red-400 mb-2">⚠ {mOverdue.length} vencida{mOverdue.length > 1 ? 's' : ''}</div>)}
+                    {mTasks.length > 0 ? (<div className="space-y-1.5">
+                      {mTasks.slice(0, 4).map(t => {
+                        const proj = projects.find(p => p.id === t.data.projectId);
+                        const isOverdue = t.data.dueDate && new Date(t.data.dueDate) < new Date(new Date().toDateString());
+                        const sc = GANTT_STATUS_CFG[t.data.status] || { color: '#6b7280' };
+                        const pc = GANTT_PRIO_CFG[t.data.priority] || { bg: '#f1f5f9', color: '#475569', label: '' };
+                        return (<div key={t.id} className="flex items-center gap-2 bg-[var(--card)] rounded-lg px-2.5 py-2">
+                          <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: sc.color }} />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[10px] font-medium truncate">{t.data.title}</div>
+                            {proj && <div className="text-[9px] text-[var(--muted-foreground)]">{proj.data.name}</div>}
+                          </div>
+                          <span className={`text-[9px] flex-shrink-0 ${isOverdue ? 'text-red-400 font-semibold' : 'text-[var(--muted-foreground)]'}`}>{t.data.dueDate ? fmtDate(t.data.dueDate) : ''}</span>
+                        </div>);
+                      })}
+                      {mTasks.length > 4 && <div className="text-[10px] text-[var(--muted-foreground)] text-center pt-1">+{mTasks.length - 4} más</div>}
+                    </div>) : (<div className="text-center py-4 text-[11px] text-[var(--muted-foreground)]">Sin tareas activas</div>)}
+                  </div>);
+                })}
+              </div>
+            </div>)}
+          </div>)}
+
+              {/* ===== PROFILE ===== */}

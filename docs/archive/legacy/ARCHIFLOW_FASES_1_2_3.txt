@@ -1,0 +1,185 @@
+ARCHIFLOW - FASES 1, 2 Y 3: INSTRUCTIVO PARA AGENTES AUTÓNOMOS
+=============================================================
+REPOSITORIO: https://github.com/yecos/archii
+STACK: Next.js 16 + React 19 + TypeScript + Tailwind CSS 4 + Firebase
+PROTOCOLO OBLIGATORIO: LEE_PRIMERO.txt, INSTRUCTIVO_BITACORA.txt, worklog.md
+EJECUCIÓN: SECUENCIAL (FASE 1 → FASE 2 → FASE 3). NO PARALELIZAR.
+=============================================================
+
+[REGLA DE ORO TRANSVERSAL]
+Antes de iniciar cualquier fase:
+1. git pull origin main
+2. Verificar locks en worklog.md
+3. git tag -a "backup-pre-faseX-$(date +%Y%m%d%H%M)" -m "Respaldo"
+4. Leer LEE_PRIMERO.txt + INSTRUCTIVO_BITACORA.txt
+5. NUNCA tocar archivos críticos sin coordinación
+6. SIEMPRE ejecutar: npx next lint && npx next build antes de push
+=============================================================
+
+FASE 1: QUICK WINS (2-4 SEMANAS)
+--------------------------------
+OBJETIVO: Offline básico, virtualización de listas, audit logs simples, feature flags, CI/CD GitHub Actions.
+
+PASO 1.1: OFFLINE-FIRST BÁSICO
+- Instalar: npm i idb
+- Crear src/lib/offline-queue.ts
+- Patrón: escribir en IndexedDB si navigator.onLine === false
+- Sync automático: window.addEventListener("online", syncOfflineQueue)
+- Validación: Desconectar red → crear tarea → reconectar → verificar persistencia en Firestore
+
+PASO 1.2: VIRTUALIZACIÓN DE LISTAS
+- Instalar: npm i @tanstack/react-virtual
+- Reemplazar .map() en listas >50 ítems con useVirtualizer
+- Aplicar en: Kanban, Timeline, Notificaciones, Lista de proyectos
+- Validación: Scroll suave sin lag, memoria estable, DevTools Performance sin warning
+
+PASO 1.3: AUDIT LOGS SIMPLES
+- Crear Cloud Function onWrite para colecciones críticas (tasks, files, tenants)
+- Escribir en colección audit_logs: { userId, tenantId, action, collection, docId, before, after, timestamp }
+- Regla de Firestore: solo admins pueden leer audit_logs
+- Validación: Crear/editar/borrar → verificar registro en audit_logs
+
+PASO 1.4: FEATURE FLAGS
+- Usar config local o Unleash/Flagsmith gratuito
+- Crear src/lib/feature-flags.ts
+- Patrón: export const isFlagEnabled = (flag: string) => process.env[`NEXT_PUBLIC_FLAG_${flag}`] === "true"
+- Aplicar en rutas nuevas antes de merge
+- Validación: Cambiar flag → reiniciar dev → verificar activación/desactivación sin redeploy
+
+PASO 1.5: CI/CD GITHUB ACTIONS
+- Crear .github/workflows/ci.yml
+- Triggers: push a main, pull_request
+- Jobs: npm ci, npx next lint, npx next build, npm test
+- Si pasa: auto-deploy a Vercel (manual o automático según preferencia)
+- Validación: PR abre → CI corre → falla en lint/build bloquea merge
+
+ACTUALIZACIÓN WORKLOG.MD (FASE 1):
+---
+Task ID: [correlativo]
+Agent: [nombre]
+Task: Fase 1 - Quick Wins: offline, virtualización, audit logs, flags, CI/CD
+Work Log:
+- [pasos ejecutados]
+Stage Summary:
+- Offline sync funcional
+- Listas virtualizadas sin lag
+- Audit logs registrando writes críticos
+- Feature flags activos
+- CI/CD bloquea merges con build fallido
+---
+
+=============================================================
+FASE 2: CORE ENTERPRISE (1-2 MESES)
+-----------------------------------
+OBJETIVO: IA RAG por tenant, Health Score predictivo, SSO/SAML, API pública + webhooks.
+
+PASO 2.1: IA RAG POR TENANT
+- Indexar docs de OneDrive + Firestore en embeddings (Vertex AI o Pinecone)
+- Chunking: dividir por párrafos/secciones con metadata { tenantId, source, type }
+- Query: vector search + filtrado estricto por tenantId
+- Endpoint: /api/ai/rag (Server Action o Route Handler)
+- Validación: Preguntar info de tenant A → NO devuelve datos de tenant B
+
+PASO 2.2: HEALTH SCORE PREDICTIVO
+- Agregar campos: task completion rate, delay count, resource load, client feedback
+- Cloud Scheduler: diario → calcular score 0-100 por proyecto
+- Almacenar en project_health_scores collection
+- UI: semáforo visual + alertas si score < 60
+- Validación: Historial de 30 días → score refleja tendencias reales
+
+PASO 2.3: SSO/SAML + SCIM
+- Configurar Firebase Auth → SAML Provider (Azure AD / Okta / Google Workspace)
+- Mapear roles de IdP a roles internos (admin, editor, viewer)
+- Provisioning: webhooks SCIM para crear/desactivar usuarios automáticamente
+- Validación: Login corporativo → tenant correcto → permisos aplicados
+
+PASO 2.4: API PÚBLICA + RATE LIMITING
+- Rutas: /api/v1/projects, /api/v1/tasks, /api/v1/files
+- Autenticación: API Key por tenant + JWT opcional
+- Rate limit: @upstash/ratelimit ou Vercel Edge Middleware
+- OpenAPI: swagger.json auto-generado con zod + openapi-fetch
+- Validación: Postman/curl → 200 con key válida, 429 con exceso, 403 sin key
+
+PASO 2.5: WEBHOOKS SYSTEM
+- Colección webhooks: { tenantId, url, events[], active, secret }
+- Event queue: Cloud Tasks / BullMQ → POST con retry exponencial
+- Payload estandarizado: { event, tenantId, payload, timestamp, signature }
+- Validación: Endpoint prueba recibe eventos → firma HMAC verificada
+
+ACTUALIZACIÓN WORKLOG.MD (FASE 2):
+---
+Task ID: [correlativo]
+Agent: [nombre]
+Task: Fase 2 - Core Enterprise: RAG, Health Score, SSO, API, Webhooks
+Work Log:
+- [pasos ejecutados]
+Stage Summary:
+- RAG aislado por tenant funcional
+- Health Score predictivo diario
+- SSO/SAML integrado
+- API pública con rate limiting
+- Webhooks con entrega fiable
+---
+
+=============================================================
+FASE 3: MAXIMUM LEVEL (3-6 MESES)
+---------------------------------
+OBJETIVO: Colaboración real-time, marketplace integraciones, BI connector, compliance, SDK público.
+
+PASO 3.1: COLABORACIÓN REAL-TIME
+- Usar Yjs + WebSocket o Firestore optimistic sync
+- Cursores activos, comentarios anclados, presencia online
+- Conflict resolution: CRDT o last-write-wins con metadata
+- Validación: 3 usuarios editan mismo documento → sin sobrescrituras
+
+PASO 3.2: MARKETPLACE DE INTEGRACIONES
+- OAuth2 flows para GitHub, Slack, Jira, Calendly, Stripe
+- Conectores config-driven: mapeo de eventos → acciones
+- UI de gestión: activar/desactivar, logs, credenciales cifradas
+- Validación: Instalar integración → evento real → acción ejecutada
+
+PASO 3.3: BI CONNECTOR
+- Endpoints optimizados para export: /api/v1/export/csv, /json
+- Filtros por tenant, fechas, estado, usuario
+- Compatibilidad Power BI / Tableau (schema fijo, paginación)
+- Validación: Dataset descargado → importado en BI → gráficos correctos
+
+PASO 3.4: COMPLIANCE & SEGURIDAD AVANZADA
+- Field-level encryption para datos sensibles (Firebase KMS ou @aws-crypto)
+- Políticas de retención: auto-archive → borrado tras X días
+- GDPR: exportación y eliminación de datos por usuario
+- ISO27001: logs inmutables, controles de acceso, backups cifrados
+- Validación: Auditoría externa simulada → 0 hallazgos críticos
+
+PASO 3.5: SDK PÚBLICO
+- npm package: archiflow-sdk
+- Tipado TS completo, clientes REST/GraphQL, handlers de webhooks
+- Docs: typedoc + ejemplos en Next.js, Node, Python
+- Validación: npm i archiflow-sdk → import → llamadas exitosas
+
+ACTUALIZACIÓN WORKLOG.MD (FASE 3):
+---
+Task ID: [correlativo]
+Agent: [nombre]
+Task: Fase 3 - Maximum Level: real-time, marketplace, BI, compliance, SDK
+Work Log:
+- [pasos ejecutados]
+Stage Summary:
+- Colaboración real-time sin conflictos
+- Marketplace de integraciones activo
+- BI connector funcional
+- Compliance audit listo
+- SDK público publicado y documentado
+---
+
+=============================================================
+REGLAS DE SEGURIDAD Y PROTOCOLO (APLICAR EN TODAS LAS FASES)
+-------------------------------------------------------------
+1. NUNCA modificar sin git pull: AppContext.tsx, types.ts, helpers.ts, firebase-admin.ts
+2. NUNCA hardcodear tokens, keys o tenantId
+3. NUNCA sobrescribir INSTRUCTIVO_BITACORA.txt o worklog.md sin respetar formato
+4. NUNCA push a main si next lint || next build falla
+5. SIEMPRE validar tenantId y authUser?.uid en reads/writes críticos
+6. SIEMPRE registrar cada paso en worklog.md y bitácora
+7. SIEMPRE crear backup tag antes de cambios estructurales
+8. SI detectar conflictos, errores o writes no cubiertos → DETENER y reportar

@@ -1,0 +1,636 @@
+          {/* ===== INVENTORY SECTION ===== */}
+          {screen === 'inventory' && (<div className="animate-fadeIn">
+            {/* Sub-tabs */}
+            <div className="flex gap-1 mb-4 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+              {[{ id: 'dashboard' as const, label: '📊 Panel' }, { id: 'products' as const, label: '📦 Productos' }, { id: 'categories' as const, label: '🏷️ Categorías' }, { id: 'warehouse' as const, label: '🏢 Almacén' }, { id: 'movements' as const, label: '📋 Movimientos' }, { id: 'transfers' as const, label: '🔄 Transferencias' }, { id: 'reports' as const, label: '📊 Reportes' }].map(tab => (
+                <button key={tab.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap cursor-pointer transition-all flex items-center gap-1 ${invTab === tab.id ? 'bg-[var(--af-accent)] text-background' : 'bg-[var(--af-bg3)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}`} onClick={() => setInvTab(tab.id)}>
+                  {tab.label}
+                  {tab.id === 'dashboard' && invAlerts.length > 0 && <span className="w-4 h-4 rounded-full bg-red-500 text-[9px] text-white flex items-center justify-center">{invAlerts.length}</span>}
+                  {tab.id === 'transfers' && invPendingTransfers > 0 && <span className="w-4 h-4 rounded-full bg-amber-500 text-[9px] text-white flex items-center justify-center">{invPendingTransfers}</span>}
+                </button>
+              ))}
+            </div>
+
+            {/* ===== Dashboard Tab ===== */}
+            {invTab === 'dashboard' && (<div className="space-y-4">
+              <h3 className="text-lg font-semibold">📊 Panel de Inventario</h3>
+              {/* KPI Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]">
+                  <div className="text-2xl font-bold text-[var(--af-accent)]">{invProducts.length}</div>
+                  <div className="text-xs text-[var(--muted-foreground)] mt-1">Productos totales</div>
+                </div>
+                <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]">
+                  <div className="text-2xl font-bold text-blue-400">{fmtCOP(invTotalValue)}</div>
+                  <div className="text-xs text-[var(--muted-foreground)] mt-1">Valor total</div>
+                </div>
+                <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]">
+                  <div className="text-2xl font-bold text-emerald-400">{invTotalStock.toLocaleString('es-CO')}</div>
+                  <div className="text-xs text-[var(--muted-foreground)] mt-1">Unidades en stock</div>
+                </div>
+                <div className={`rounded-xl p-4 border ${invAlerts.length > 0 ? 'bg-red-500/10 border-red-500/30' : 'bg-[var(--af-bg3)] border-[var(--border)]'}`}>
+                  <div className={`text-2xl font-bold ${invAlerts.length > 0 ? 'text-red-400' : 'text-emerald-400'}`}>{invAlerts.length}</div>
+                  <div className="text-xs text-[var(--muted-foreground)] mt-1">Alertas activas</div>
+                </div>
+              </div>
+              {/* Alerts Section */}
+              {invAlerts.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-red-400">⚠️ Alertas activas</h4>
+                  {invAlerts.map((alert, i) => (
+                    <div key={i} className={`rounded-lg px-3 py-2.5 border flex items-center gap-2 ${alert.severity === 'critical' ? 'bg-red-500/15 border-red-500/30' : alert.severity === 'high' ? 'bg-amber-500/10 border-amber-500/30' : 'bg-blue-500/10 border-blue-500/30'}`}>
+                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${alert.severity === 'critical' ? 'bg-red-500/20 text-red-400' : alert.severity === 'high' ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400'}`}>{alert.severity === 'critical' ? 'CRÍTICO' : alert.severity === 'high' ? 'ALTO' : 'MEDIO'}</span>
+                      <span className="text-sm">{alert.msg}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Warehouse Overview */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2">🏢 Stock por almacén</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {INV_WAREHOUSES.map(wh => {
+                    const whStock = invProducts.reduce((s, p) => s + getWarehouseStock(p, wh), 0);
+                    const whValue = invProducts.reduce((s, p) => s + getWarehouseStock(p, wh) * (Number(p.data.price) || 0), 0);
+                    const whProducts = invProducts.filter(p => getWarehouseStock(p, wh) > 0).length;
+                    return (
+                      <div key={wh} className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]">
+                        <div className="text-sm font-semibold">{wh}</div>
+                        <div className="text-xl font-bold text-[var(--af-accent)] mt-1">{whStock.toLocaleString('es-CO')}</div>
+                        <div className="text-[10px] text-[var(--muted-foreground)]">{whProducts} productos · {fmtCOP(whValue)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Recent Movements */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Últimos movimientos</h4>
+                {invMovements.length === 0 ? (
+                  <div className="text-center py-6 text-[var(--muted-foreground)] text-sm">Sin movimientos</div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {invMovements.slice(0, 6).map(m => (
+                      <div key={m.id} className="flex items-center justify-between bg-[var(--af-bg3)] rounded-lg px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-lg ${m.data.type === 'Entrada' ? 'text-emerald-400' : 'text-red-400'}`}>{m.data.type === 'Entrada' ? '↓' : '↑'}</span>
+                          <div>
+                            <div className="text-sm font-medium">{getInvProductName(m.data.productId)}</div>
+                            <div className="text-[10px] text-[var(--muted-foreground)]">{m.data.warehouse || '—'}{m.data.reason ? ` · ${m.data.reason}` : ''}</div>
+                          </div>
+                        </div>
+                        <span className={`text-sm font-semibold ${m.data.type === 'Entrada' ? 'text-emerald-400' : 'text-red-400'}`}>{m.data.type === 'Entrada' ? '+' : '-'}{m.data.quantity}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* Categories */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Por categoría</h4>
+                {invCategories.length === 0 ? (
+                  <div className="text-center py-4 text-[var(--muted-foreground)] text-sm">Sin categorías</div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {invCategories.map(c => {
+                      const cp = invProducts.filter(p => p.data.categoryId === c.id);
+                      const cv = cp.reduce((s, p) => s + (Number(p.data.price) || 0) * getTotalStock(p), 0);
+                      return (
+                        <div key={c.id} className="bg-[var(--af-bg3)] rounded-lg p-3 border border-[var(--border)]">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.data.color }} />
+                            <span className="text-xs font-medium truncate">{c.data.name}</span>
+                          </div>
+                          <div className="text-lg font-bold">{cp.length}</div>
+                          <div className="text-[10px] text-[var(--muted-foreground)]">{fmtCOP(cv)}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>)}
+
+            {/* ===== Products Tab ===== */}
+            {invTab === 'products' && (<div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold">📦 Productos ({invProducts.length})</h3>
+                <button className="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer bg-[var(--af-accent)] text-background border-none hover:bg-[var(--af-accent2)] transition-colors flex items-center gap-2 self-start" onClick={() => { setEditingId(null); const rf: Record<string,any> = { invProdName: '', invProdSku: '', invProdCat: '', invProdUnit: 'Unidad', invProdPrice: '', invProdMinStock: '5', invProdDesc: '', invProdImage: '', invProdWarehouse: 'Almacén Principal' }; INV_WAREHOUSES.forEach(w => { rf[`invProdWS_${w.replace(/\s/g,'_')}`] = '0'; }); setForms(p => ({ ...p, ...rf })); openModal('invProduct'); }}>
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 stroke-current fill-none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Nuevo producto
+                </button>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg pl-9 pr-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Buscar producto..." value={invSearch} onChange={e => setInvSearch(e.target.value)} />
+                </div>
+                <select className="bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={invFilterCat} onChange={e => setInvFilterCat(e.target.value)}>
+                  <option value="all">Todas las categorías</option>
+                  {invCategories.map(c => <option key={c.id} value={c.id}>{c.data.name}</option>)}
+                </select>
+              </div>
+              {invProducts.filter(p => {
+                const ms = !invSearch || p.data.name.toLowerCase().includes(invSearch.toLowerCase()) || (p.data.sku || '').toLowerCase().includes(invSearch.toLowerCase());
+                const mc = invFilterCat === 'all' || p.data.categoryId === invFilterCat;
+                return ms && mc;
+              }).length === 0 ? (
+                <div className="text-center py-12"><div className="text-4xl mb-2">📦</div><div className="text-[var(--muted-foreground)]">No hay productos</div></div>
+              ) : (
+                <div className="space-y-2">
+                  {invProducts.filter(p => {
+                    const ms = !invSearch || p.data.name.toLowerCase().includes(invSearch.toLowerCase()) || (p.data.sku || '').toLowerCase().includes(invSearch.toLowerCase());
+                    const mc = invFilterCat === 'all' || p.data.categoryId === invFilterCat;
+                    return ms && mc;
+                  }).map(p => {
+                    const totalSt = getTotalStock(p);
+                    const isLow = totalSt <= (Number(p.data.minStock) || 0);
+                    const isOut = totalSt === 0;
+                    return (
+                      <div key={p.id} className={`bg-[var(--af-bg3)] rounded-xl p-3 sm:p-4 border ${isOut ? 'border-red-500/40' : isLow ? 'border-amber-500/30' : 'border-[var(--border)]'}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-3 min-w-0">
+                            {p.data.imageData ? <img src={p.data.imageData} alt={p.data.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 mt-0.5" /> : <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: (getInvCategoryColor(p.data.categoryId) || '#6b7280') + '20' }}><div className="w-4 h-4 rounded-sm" style={{ backgroundColor: getInvCategoryColor(p.data.categoryId) }} /></div>}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-semibold truncate">{p.data.name}</span>
+                                {p.data.sku && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--card)] text-[var(--muted-foreground)]">{p.data.sku}</span>}
+                                {isOut && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">AGOTADO</span>}
+                                {isLow && !isOut && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400">⚠ Bajo</span>}
+                              </div>
+                              <div className="text-[11px] text-[var(--muted-foreground)] mt-0.5">{getInvCategoryName(p.data.categoryId)} · {p.data.unit}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button className="w-8 h-8 rounded-lg bg-[var(--card)] border border-[var(--border)] flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors cursor-pointer" onClick={() => openEditInvProduct(p)}><svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                            <button className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer" onClick={() => deleteInvProduct(p.id)}><svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+                          </div>
+                        </div>
+                        {/* Per-warehouse stock breakdown */}
+                        <div className="mt-3 pt-3 border-t border-[var(--border)]">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {INV_WAREHOUSES.map(wh => {
+                              const ws = getWarehouseStock(p, wh);
+                              return (
+                                <div key={wh} className="text-center">
+                                  <div className="text-[10px] text-[var(--muted-foreground)] truncate">{wh}</div>
+                                  <div className={`text-sm font-bold ${ws === 0 ? 'text-red-400' : ws <= (Number(p.data.minStock) || 0) ? 'text-amber-400' : 'text-[var(--foreground)]'}`}>{ws}</div>
+                                </div>
+                              );
+                            })}
+                            <div className="text-center">
+                              <div className="text-[10px] text-[var(--muted-foreground)]">Total</div>
+                              <div className="text-sm font-bold text-[var(--af-accent)]">{totalSt}</div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 mt-2">
+                          <div><div className="text-[10px] text-[var(--muted-foreground)]">Precio unit.</div><div className="text-sm font-medium">{fmtCOP(Number(p.data.price) || 0)}</div></div>
+                          <div><div className="text-[10px] text-[var(--muted-foreground)]">Valor total</div><div className="text-sm font-medium">{fmtCOP((Number(p.data.price) || 0) * totalSt)}</div></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>)}
+
+            {/* ===== Categories Tab ===== */}
+            {invTab === 'categories' && (<div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">🏷️ Categorías ({invCategories.length})</h3>
+                <button className="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer bg-[var(--af-accent)] text-background border-none hover:bg-[var(--af-accent2)] transition-colors flex items-center gap-2" onClick={() => { setEditingId(null); setForms(p => ({ ...p, invCatName: '', invCatColor: '', invCatDesc: '' })); openModal('invCategory'); }}><svg viewBox="0 0 24 24" className="w-4 h-4 stroke-current fill-none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva categoría</button>
+              </div>
+              {invCategories.length === 0 ? (<div className="text-center py-12"><div className="text-4xl mb-2">🏷️</div><div className="text-[var(--muted-foreground)]">No hay categorías</div></div>) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {invCategories.map(c => {
+                    const count = invProducts.filter(p => p.data.categoryId === c.id).length;
+                    return (
+                      <div key={c.id} className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: (c.data.color || '#6b7280') + '20' }}><div className="w-5 h-5 rounded" style={{ backgroundColor: c.data.color }} /></div>
+                            <div><div className="text-sm font-semibold">{c.data.name}</div><div className="text-xs text-[var(--muted-foreground)]">{count} producto{count !== 1 ? 's' : ''}</div>{c.data.description && <div className="text-[11px] text-[var(--muted-foreground)] mt-0.5">{c.data.description}</div>}</div>
+                          </div>
+                          <div className="flex gap-1">
+                            <button className="w-8 h-8 rounded-lg bg-[var(--card)] border border-[var(--border)] flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors cursor-pointer" onClick={() => openEditInvCategory(c)}><svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                            <button className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer" onClick={() => deleteInvCategory(c.id)}><svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>)}
+
+            {/* ===== Warehouse Tab ===== */}
+            {invTab === 'warehouse' && (<div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold">🏢 Almacenes</h3>
+                <div className="flex gap-2">
+                  <button className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all bg-emerald-600 text-white border-none hover:bg-emerald-700" onClick={() => { setEditingId(null); setForms(p => ({ ...p, invMovProduct: '', invMovType: 'Entrada', invMovWarehouse: 'Almacén Principal', invMovQty: '', invMovReason: '', invMovRef: '', invMovDate: '' })); openModal('invMovement'); }}>+ Entrada</button>
+                  <button className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all bg-red-500 text-white border-none hover:bg-red-600" onClick={() => { setEditingId(null); setForms(p => ({ ...p, invMovProduct: '', invMovType: 'Salida', invMovWarehouse: 'Almacén Principal', invMovQty: '', invMovReason: '', invMovRef: '', invMovDate: '' })); openModal('invMovement'); }}>- Salida</button>
+                  <button className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all bg-blue-600 text-white border-none hover:bg-blue-700" onClick={() => { setEditingId(null); setForms(p => ({ ...p, invTrProduct: '', invTrFrom: '', invTrTo: '', invTrQty: '', invTrDate: '', invTrNotes: '' })); openModal('invTransfer'); }}>🔄 Transferir</button>
+                </div>
+              </div>
+              {/* Warehouse filter */}
+              <div className="flex gap-1 overflow-x-auto pb-1">
+                <button className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap cursor-pointer transition-all ${invWarehouseFilter === 'all' ? 'bg-[var(--af-accent)] text-background' : 'bg-[var(--af-bg3)] text-[var(--muted-foreground)]'}`} onClick={() => setInvWarehouseFilter('all')}>Todos</button>
+                {INV_WAREHOUSES.map(wh => <button key={wh} className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap cursor-pointer transition-all ${invWarehouseFilter === wh ? 'bg-[var(--af-accent)] text-background' : 'bg-[var(--af-bg3)] text-[var(--muted-foreground)]'}`} onClick={() => setInvWarehouseFilter(wh)}>{wh}</button>)}
+              </div>
+              {/* Warehouse cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {INV_WAREHOUSES.map(wh => {
+                  if (invWarehouseFilter !== 'all' && invWarehouseFilter !== wh) return null;
+                  const ws = invProducts.reduce((s, p) => s + getWarehouseStock(p, wh), 0);
+                  const wv = invProducts.reduce((s, p) => s + getWarehouseStock(p, wh) * (Number(p.data.price) || 0), 0);
+                  const wp = invProducts.filter(p => getWarehouseStock(p, wh) > 0).length;
+                  return (
+                    <div key={wh} className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]">
+                      <div className="text-sm font-semibold">{wh}</div>
+                      <div className="text-2xl font-bold text-[var(--af-accent)] mt-1">{ws.toLocaleString('es-CO')}</div>
+                      <div className="text-xs text-[var(--muted-foreground)]">{wp} productos · {fmtCOP(wv)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Product stock by warehouse */}
+              {(invWarehouseFilter === 'all' ? INV_WAREHOUSES : [invWarehouseFilter]).map(wh => (
+                <div key={wh}>
+                  <h4 className="text-sm font-semibold mb-2 mt-2">{wh}</h4>
+                  <div className="space-y-1.5">
+                    {invProducts.filter(p => getWarehouseStock(p, wh) > 0).sort((a, b) => getWarehouseStock(b, wh) - getWarehouseStock(a, wh)).map(p => {
+                      const maxS = Math.max(...invProducts.map(x => getWarehouseStock(x, wh)), 1);
+                      const pct = (getWarehouseStock(p, wh) / maxS) * 100;
+                      return (
+                        <div key={p.id} className="bg-[var(--af-bg3)] rounded-lg px-3 py-2.5 border border-[var(--border)]">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getInvCategoryColor(p.data.categoryId) }} />
+                              <span className="text-sm">{p.data.name}</span>
+                            </div>
+                            <span className="text-sm font-bold">{getWarehouseStock(p, wh)} {p.data.unit}</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-[var(--border)] rounded-full overflow-hidden"><div className="h-full rounded-full bg-[var(--af-accent)]" style={{ width: `${pct}%` }} /></div>
+                        </div>
+                      );
+                    })}
+                    {invProducts.filter(p => getWarehouseStock(p, wh) > 0).length === 0 && <div className="text-center py-4 text-sm text-[var(--muted-foreground)]">Sin stock en este almacén</div>}
+                  </div>
+                </div>
+              ))}
+            </div>)}
+
+            {/* ===== Movements Tab ===== */}
+            {invTab === 'movements' && (<div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold">📋 Movimientos ({invMovements.length})</h3>
+                <button className="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer bg-emerald-600 text-white border-none hover:bg-emerald-700 transition-colors flex items-center gap-2 self-start" onClick={() => { setEditingId(null); setForms(p => ({ ...p, invMovProduct: '', invMovType: 'Entrada', invMovWarehouse: 'Almacén Principal', invMovQty: '', invMovReason: '', invMovRef: '', invMovDate: '' })); openModal('invMovement'); }}><svg viewBox="0 0 24 24" className="w-4 h-4 stroke-current fill-none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Registrar movimiento</button>
+              </div>
+              <div className="flex gap-2">
+                <select className="flex-1 bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={invMovFilterType} onChange={e => setInvMovFilterType(e.target.value)}><option value="all">Todos</option><option value="Entrada">Entradas</option><option value="Salida">Salidas</option></select>
+                <select className="flex-1 bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={invWarehouseFilter} onChange={e => setInvWarehouseFilter(e.target.value)}><option value="all">Todos los almacenes</option>{INV_WAREHOUSES.map(w => <option key={w} value={w}>{w}</option>)}</select>
+              </div>
+              {invMovements.filter(m => {
+                const mt = invMovFilterType === 'all' || m.data.type === invMovFilterType;
+                const mw = invWarehouseFilter === 'all' || m.data.warehouse === invWarehouseFilter;
+                return mt && mw;
+              }).length === 0 ? (<div className="text-center py-12"><div className="text-4xl mb-2">📋</div><div className="text-[var(--muted-foreground)]">Sin movimientos</div></div>) : (
+                <div className="space-y-2">
+                  {invMovements.filter(m => {
+                    const mt = invMovFilterType === 'all' || m.data.type === invMovFilterType;
+                    const mw = invWarehouseFilter === 'all' || m.data.warehouse === invWarehouseFilter;
+                    return mt && mw;
+                  }).map(m => (
+                    <div key={m.id} className={`bg-[var(--af-bg3)] rounded-xl p-3 sm:p-4 border ${m.data.type === 'Entrada' ? 'border-emerald-500/20' : 'border-red-500/20'}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${m.data.type === 'Entrada' ? 'bg-emerald-500/15' : 'bg-red-500/15'}`}><span className={`text-lg font-bold ${m.data.type === 'Entrada' ? 'text-emerald-400' : 'text-red-400'}`}>{m.data.type === 'Entrada' ? '↓' : '↑'}</span></div>
+                          <div>
+                            <div className="text-sm font-semibold">{getInvProductName(m.data.productId)}</div>
+                            <div className="text-[11px] text-[var(--muted-foreground)]">{m.data.warehouse || '—'} · {m.data.quantity} uds{m.data.reference ? ` · Ref: ${m.data.reference}` : ''}</div>
+                            {m.data.reason && <div className="text-[11px] text-[var(--muted-foreground)]">{m.data.reason}</div>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-right"><div className={`text-sm font-bold ${m.data.type === 'Entrada' ? 'text-emerald-400' : 'text-red-400'}`}>{m.data.type === 'Entrada' ? '+' : '-'}{m.data.quantity}</div><div className="text-[10px] text-[var(--muted-foreground)]">{m.data.date || ''}</div></div>
+                          <button className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer" onClick={() => deleteInvMovement(m.id)}><svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>)}
+
+            {/* ===== Transfers Tab ===== */}
+            {invTab === 'transfers' && (<div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold">🔄 Transferencias ({invTransfers.length})</h3>
+                <button className="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer bg-blue-600 text-white border-none hover:bg-blue-700 transition-colors flex items-center gap-2 self-start" onClick={() => { setEditingId(null); setForms(p => ({ ...p, invTrProduct: '', invTrFrom: '', invTrTo: '', invTrQty: '', invTrDate: '', invTrNotes: '' })); openModal('invTransfer'); }}><svg viewBox="0 0 24 24" className="w-4 h-4 stroke-current fill-none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>Nueva transferencia</button>
+              </div>
+              <select className="bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={invTransferFilterStatus} onChange={e => setInvTransferFilterStatus(e.target.value)}><option value="all">Todos los estados</option>{TRANSFER_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}</select>
+              {invTransfers.filter(t => invTransferFilterStatus === 'all' || t.data.status === invTransferFilterStatus).length === 0 ? (
+                <div className="text-center py-12"><div className="text-4xl mb-2">🔄</div><div className="text-[var(--muted-foreground)]">Sin transferencias</div><div className="text-xs text-[var(--muted-foreground)] mt-1">Mueve productos entre almacenes</div></div>
+              ) : (
+                <div className="space-y-2">
+                  {invTransfers.filter(t => invTransferFilterStatus === 'all' || t.data.status === invTransferFilterStatus).map(t => (
+                    <div key={t.id} className="bg-[var(--af-bg3)] rounded-xl p-3 sm:p-4 border border-blue-500/20">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-blue-500/15 flex items-center justify-center"><span className="text-lg">🔄</span></div>
+                          <div>
+                            <div className="text-sm font-semibold">{t.data.productName || getInvProductName(t.data.productId)}</div>
+                            <div className="text-[11px] text-[var(--muted-foreground)]">
+                              <span className="text-blue-400">{t.data.fromWarehouse}</span>
+                              <span className="mx-1">→</span>
+                              <span className="text-emerald-400">{t.data.toWarehouse}</span>
+                              <span className="ml-1">· {t.data.quantity} uds</span>
+                            </div>
+                            {t.data.notes && <div className="text-[11px] text-[var(--muted-foreground)] mt-0.5">{t.data.notes}</div>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${t.data.status === 'Completada' ? 'bg-emerald-500/15 text-emerald-400' : t.data.status === 'En tránsito' ? 'bg-blue-500/15 text-blue-400' : t.data.status === 'Cancelada' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'}`}>{t.data.status}</span>
+                          <button className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer" onClick={() => deleteInvTransfer(t.id)}><svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>)}
+
+            {/* ===== Reports Tab ===== */}
+            {invTab === 'reports' && (<div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold">📊 Reportes</h3>
+                <div className="flex gap-2">
+                  <button className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all bg-[var(--af-accent)] text-background border-none hover:bg-[var(--af-accent2)]" onClick={() => {
+                    // Export products CSV
+                    const headers = ['Nombre', 'SKU', 'Categoría', 'Unidad', 'Precio', 'Stock Total', 'Mín Stock', 'Valor Total'];
+                    const rows = invProducts.map(p => [p.data.name, p.data.sku || '', getInvCategoryName(p.data.categoryId), p.data.unit, Number(p.data.price) || 0, getTotalStock(p), Number(p.data.minStock) || 0, (Number(p.data.price) || 0) * getTotalStock(p)]);
+                    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+                    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.href = url; a.download = `inventario_productos_${new Date().toISOString().split('T')[0]}.csv`; a.click(); URL.revokeObjectURL(url);
+                    showToast('CSV de productos exportado');
+                  }}>📥 Exportar productos CSV</button>
+                  <button className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all bg-blue-600 text-white border-none hover:bg-blue-700" onClick={() => {
+                    // Export movements CSV
+                    const headers = ['Fecha', 'Tipo', 'Producto', 'Almacén', 'Cantidad', 'Motivo', 'Referencia'];
+                    const rows = invMovements.map(m => [m.data.date || '', m.data.type, getInvProductName(m.data.productId), m.data.warehouse || '', m.data.quantity, m.data.reason || '', m.data.reference || '']);
+                    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+                    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.href = url; a.download = `movimientos_${new Date().toISOString().split('T')[0]}.csv`; a.click(); URL.revokeObjectURL(url);
+                    showToast('CSV de movimientos exportado');
+                  }}>📥 Exportar movimientos CSV</button>
+                </div>
+              </div>
+
+              {/* Summary cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]">
+                  <div className="text-xs text-[var(--muted-foreground)]">Valor total inventario</div>
+                  <div className="text-xl font-bold text-[var(--af-accent)] mt-1">{fmtCOP(invTotalValue)}</div>
+                </div>
+                <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]">
+                  <div className="text-xs text-[var(--muted-foreground)]">Productos con stock</div>
+                  <div className="text-xl font-bold text-emerald-400 mt-1">{invProducts.filter(p => getTotalStock(p) > 0).length}</div>
+                </div>
+                <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]">
+                  <div className="text-xs text-[var(--muted-foreground)]">Agotados</div>
+                  <div className="text-xl font-bold text-red-400 mt-1">{invProducts.filter(p => getTotalStock(p) === 0).length}</div>
+                </div>
+                <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]">
+                  <div className="text-xs text-[var(--muted-foreground)]">Total movimientos</div>
+                  <div className="text-xl font-bold text-blue-400 mt-1">{invMovements.length}</div>
+                </div>
+              </div>
+
+              {/* Stock by Category - horizontal bar chart */}
+              <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]">
+                <h4 className="text-sm font-semibold mb-3">📦 Stock por categoría</h4>
+                {invCategories.length === 0 ? (<div className="text-center py-6 text-sm text-[var(--muted-foreground)]">Sin categorías</div>) : (
+                  <div className="space-y-2.5">
+                    {invCategories.map(c => {
+                      const catProducts = invProducts.filter(p => p.data.categoryId === c.id);
+                      const catStock = catProducts.reduce((s, p) => s + getTotalStock(p), 0);
+                      const catValue = catProducts.reduce((s, p) => s + (Number(p.data.price) || 0) * getTotalStock(p), 0);
+                      const maxStock = Math.max(...invCategories.map(cc => invProducts.filter(pp => pp.data.categoryId === cc.id).reduce((s, p) => s + getTotalStock(p), 0)), 1);
+                      const pct = (catStock / maxStock) * 100;
+                      return (
+                        <div key={c.id}>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.data.color }} />
+                              <span className="text-sm font-medium">{c.data.name}</span>
+                              <span className="text-[10px] text-[var(--muted-foreground)]">{catProducts.length} prod.</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-sm font-bold">{catStock.toLocaleString('es-CO')} uds</span>
+                              <span className="text-[10px] text-[var(--muted-foreground)] ml-2">{fmtCOP(catValue)}</span>
+                            </div>
+                          </div>
+                          <div className="w-full h-3 bg-[var(--border)] rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: c.data.color }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {invProducts.filter(p => !p.data.categoryId).length > 0 && (() => {
+                      const uncat = invProducts.filter(p => !p.data.categoryId);
+                      const stock = uncat.reduce((s, p) => s + getTotalStock(p), 0);
+                      return (
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-gray-400" />
+                              <span className="text-sm font-medium">Sin categoría</span>
+                              <span className="text-[10px] text-[var(--muted-foreground)]">{uncat.length} prod.</span>
+                            </div>
+                            <span className="text-sm font-bold">{stock.toLocaleString('es-CO')} uds</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+
+              {/* Stock by Warehouse */}
+              <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]">
+                <h4 className="text-sm font-semibold mb-3">🏢 Stock por almacén</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {INV_WAREHOUSES.map(wh => {
+                    const whStock = invProducts.reduce((s, p) => s + getWarehouseStock(p, wh), 0);
+                    const whValue = invProducts.reduce((s, p) => s + getWarehouseStock(p, wh) * (Number(p.data.price) || 0), 0);
+                    const maxWh = Math.max(...INV_WAREHOUSES.map(w => invProducts.reduce((s, p) => s + getWarehouseStock(p, w), 0)), 1);
+                    return (
+                      <div key={wh} className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
+                        <div className="text-xs font-medium mb-1">{wh}</div>
+                        <div className="text-lg font-bold text-[var(--af-accent)]">{whStock.toLocaleString('es-CO')}</div>
+                        <div className="text-[10px] text-[var(--muted-foreground)] mb-2">{fmtCOP(whValue)}</div>
+                        <div className="w-full h-2 bg-[var(--border)] rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-[var(--af-accent)]" style={{ width: `${(whStock / maxWh) * 100}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Top products by value */}
+              <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]">
+                <h4 className="text-sm font-semibold mb-3">💎 Top 10 productos por valor</h4>
+                {invProducts.length === 0 ? (<div className="text-center py-6 text-sm text-[var(--muted-foreground)]">Sin productos</div>) : (
+                  <div className="space-y-2">
+                    {[...invProducts].sort((a, b) => ((Number(b.data.price) || 0) * getTotalStock(b)) - ((Number(a.data.price) || 0) * getTotalStock(a))).slice(0, 10).map((p, i) => {
+                      const val = (Number(p.data.price) || 0) * getTotalStock(p);
+                      const maxVal = Math.max((Number(invProducts[0]?.data.price) || 0) * getTotalStock(invProducts[0]), 1);
+                      return (
+                        <div key={p.id} className="flex items-center gap-3">
+                          <span className="text-xs font-bold text-[var(--muted-foreground)] w-5 text-right">{i + 1}</span>
+                          {p.data.imageData ? <img src={p.data.imageData} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" /> : <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: (getInvCategoryColor(p.data.categoryId) || '#6b7280') + '20' }}><div className="w-3 h-3 rounded-sm" style={{ backgroundColor: getInvCategoryColor(p.data.categoryId) }} /></div>}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium truncate">{p.data.name}</div>
+                            <div className="text-[10px] text-[var(--muted-foreground)]">{getTotalStock(p)} {p.data.unit} × {fmtCOP(Number(p.data.price) || 0)}</div>
+                          </div>
+                          <span className="text-sm font-bold text-[var(--af-accent)] whitespace-nowrap">{fmtCOP(val)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Movements summary */}
+              <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]">
+                <h4 className="text-sm font-semibold mb-3">📈 Resumen de movimientos</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-emerald-400">{invMovements.filter(m => m.data.type === 'Entrada').length}</div>
+                    <div className="text-[10px] text-[var(--muted-foreground)]">Entradas</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-red-400">{invMovements.filter(m => m.data.type === 'Salida').length}</div>
+                    <div className="text-[10px] text-[var(--muted-foreground)]">Salidas</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-blue-400">{invTransfers.length}</div>
+                    <div className="text-[10px] text-[var(--muted-foreground)]">Transferencias</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-[var(--foreground)]">{invTotalStock.toLocaleString('es-CO')}</div>
+                    <div className="text-[10px] text-[var(--muted-foreground)]">Stock actual</div>
+                  </div>
+                </div>
+                {/* Movement by warehouse bars */}
+                <div className="space-y-2">
+                  {INV_WAREHOUSES.map(wh => {
+                    const entries = invMovements.filter(m => m.data.warehouse === wh && m.data.type === 'Entrada').reduce((s, m) => s + m.data.quantity, 0);
+                    const exits = invMovements.filter(m => m.data.warehouse === wh && m.data.type === 'Salida').reduce((s, m) => s + m.data.quantity, 0);
+                    return (
+                      <div key={wh} className="flex items-center gap-2">
+                        <span className="text-xs text-[var(--muted-foreground)] w-36 truncate">{wh}</span>
+                        <div className="flex-1 flex items-center gap-1">
+                          <div className="flex-1 h-5 bg-[var(--border)] rounded-l-full overflow-hidden flex">
+                            <div className="h-full bg-emerald-500/70 flex items-center justify-center" style={{ width: entries + exits > 0 ? `${(entries / (entries + exits)) * 100}%` : '50%' }}>
+                              {entries > 0 && <span className="text-[9px] text-white font-medium px-1">+{entries}</span>}
+                            </div>
+                            <div className="h-full bg-red-500/70 flex items-center justify-center" style={{ width: entries + exits > 0 ? `${(exits / (entries + exits)) * 100}%` : '50%' }}>
+                              {exits > 0 && <span className="text-[9px] text-white font-medium px-1">-{exits}</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Products table (detailed) */}
+              <div className="bg-[var(--af-bg3)] rounded-xl p-4 border border-[var(--border)]">
+                <h4 className="text-sm font-semibold mb-3">📋 Tabla detallada de productos</h4>
+                {/* Mobile card view */}
+                <div className="md:hidden space-y-3">
+                  {invProducts.map(p => {
+                    const ts = getTotalStock(p);
+                    const isOut = ts === 0;
+                    const isLow = ts > 0 && ts <= (Number(p.data.minStock) || 0);
+                    return (
+                      <div key={p.id} className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
+                        <div className="flex items-start gap-3">
+                          {p.data.imageData ? <img src={p.data.imageData} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" /> : <div className="w-10 h-10 rounded-lg bg-[var(--af-bg4)] flex items-center justify-center flex-shrink-0">📦</div>}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold truncate">{p.data.name}</div>
+                            <div className="text-[11px] text-[var(--muted-foreground)]">{getInvCategoryName(p.data.categoryId)}</div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className={`text-sm font-bold ${isOut ? 'text-red-400' : isLow ? 'text-amber-400' : ''}`}>{ts}</div>
+                            <div className="text-[10px] text-[var(--muted-foreground)]">uds</div>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center mt-2 pt-2 border-t border-[var(--border)]">
+                          <span className="text-xs text-[var(--muted-foreground)]">Precio: {fmtCOP(Number(p.data.price) || 0)}</span>
+                          <span className="text-xs font-medium text-[var(--af-accent)]">Valor: {fmtCOP((Number(p.data.price) || 0) * ts)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Desktop table view */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-[var(--border)]">
+                        <th className="text-left py-2 px-2 text-[var(--muted-foreground)] font-medium">Producto</th>
+                        <th className="text-left py-2 px-2 text-[var(--muted-foreground)] font-medium">Categoría</th>
+                        <th className="text-right py-2 px-2 text-[var(--muted-foreground)] font-medium">Precio</th>
+                        {INV_WAREHOUSES.map(wh => <th key={wh} className="text-right py-2 px-2 text-[var(--muted-foreground)] font-medium whitespace-nowrap">{wh.split(' ')[0]}</th>)}
+                        <th className="text-right py-2 px-2 text-[var(--muted-foreground)] font-medium">Total</th>
+                        <th className="text-right py-2 px-2 text-[var(--muted-foreground)] font-medium">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invProducts.map(p => {
+                        const ts = getTotalStock(p);
+                        return (
+                          <tr key={p.id} className="border-b border-[var(--border)]/50">
+                            <td className="py-2 px-2">
+                              <div className="flex items-center gap-2">
+                                {p.data.imageData ? <img src={p.data.imageData} alt="" className="w-6 h-6 rounded object-cover" /> : null}
+                                <div>
+                                  <div className="font-medium">{p.data.name}</div>
+                                  {p.data.sku && <div className="text-[10px] text-[var(--muted-foreground)]">{p.data.sku}</div>}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-2 px-2"><div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: getInvCategoryColor(p.data.categoryId) }} /><span>{getInvCategoryName(p.data.categoryId)}</span></div></td>
+                            <td className="py-2 px-2 text-right">{fmtCOP(Number(p.data.price) || 0)}</td>
+                            {INV_WAREHOUSES.map(wh => { const ws = getWarehouseStock(p, wh); return <td key={wh} className={`py-2 px-2 text-right ${ws === 0 ? 'text-red-400' : ''}`}>{ws}</td>; })}
+                            <td className="py-2 px-2 text-right font-bold">{ts}</td>
+                            <td className="py-2 px-2 text-right font-medium text-[var(--af-accent)]">{fmtCOP((Number(p.data.price) || 0) * ts)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t-2 border-[var(--border)] font-bold">
+                        <td className="py-2 px-2" colSpan={2}>{invProducts.length} productos</td>
+                        <td className="py-2 px-2"></td>
+                        {INV_WAREHOUSES.map(wh => <td key={wh} className="py-2 px-2 text-right">{invProducts.reduce((s, p) => s + getWarehouseStock(p, wh), 0).toLocaleString('es-CO')}</td>)}
+                        <td className="py-2 px-2 text-right">{invTotalStock.toLocaleString('es-CO')}</td>
+                        <td className="py-2 px-2 text-right text-[var(--af-accent)]">{fmtCOP(invTotalValue)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>)}
+          </div>)}
+
+
+          {/* ===== ADMIN PANEL ===== */}

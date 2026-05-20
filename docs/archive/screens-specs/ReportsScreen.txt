@@ -1,0 +1,293 @@
+      {screen === 'reports' && (<div className="animate-fadeIn space-y-4">
+        {/* Export toolbar */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex gap-1 bg-[var(--af-bg3)] rounded-lg p-1">
+            {['General', 'Financiero', 'Tiempo', 'Equipo'].map(tab => (
+              <button key={tab} className={`px-3 py-1.5 rounded-md text-[13px] cursor-pointer transition-all ${(!forms.reportTab || forms.reportTab === 'General') === (tab === 'General') ? 'bg-[var(--card)] text-[var(--foreground)] font-medium shadow-sm' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}`} onClick={() => setForms(p => ({ ...p, reportTab: tab }))}>{tab}</button>
+            ))}
+          </div>
+          <button className="flex items-center gap-1.5 bg-[var(--af-bg3)] text-[var(--foreground)] px-3 py-2 rounded-lg text-xs font-medium cursor-pointer border border-[var(--border)] hover:border-[var(--af-accent)]/30" onClick={() => {
+            try {
+              let csv = 'Tipo,Dato,Valor\n';
+              csv += `Proyectos,Total,${projects.length}\n`;
+              csv += `Presupuesto,Total,${projects.reduce((s, p) => s + (p.data.budget || 0), 0)}\n`;
+              csv += `Gastos,Total,${expenses.reduce((s, e) => s + (e.data.amount || 0), 0)}\n`;
+              csv += `Tareas,Completadas,${tasks.filter(t => t.data.status === 'Completado').length}\n`;
+              csv += `Tareas,Pendientes,${tasks.filter(t => t.data.status !== 'Completado').length}\n`;
+              csv += `Equipo,Miembros,${teamUsers.length}\n`;
+              csv += `Tiempo,Horas totales,${timeEntries.reduce((s, e) => s + (e.data.duration || 0), 0)} minutos\n`;
+              csv += `Facturas,Total facturado,${invoices.filter(i => i.data.status !== 'Cancelada').reduce((s, i) => s + (i.data.total || 0), 0)}\n`;
+              projects.forEach(p => { csv += `Proyecto,"${p.data.name}",Presupuesto: ${p.data.budget}, Progreso: ${p.data.progress}%\n`; });
+              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a'); a.href = url; a.download = `archii-reporte-${new Date().toISOString().split('T')[0]}.csv`; a.click();
+              URL.revokeObjectURL(url);
+              showToast('Reporte CSV descargado');
+            } catch (err) { showToast('Error al exportar', 'error'); }
+          }}>
+            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
+        </div>
+
+        {/* General Report (existing) */}
+        {(!forms.reportTab || forms.reportTab === 'General') && (<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {(() => {
+            const totalBudget = projects.reduce((s, p) => s + (p.data.budget || 0), 0);
+            const totalSpent = expenses.reduce((s, e) => s + (e.data.amount || 0), 0);
+            const projByStatus: Record<string, number> = {};
+            projects.forEach(p => { const st = p.data.status || 'Otro'; projByStatus[st] = (projByStatus[st] || 0) + 1; });
+            const taskCompleted = tasks.filter(t => t.data.status === 'Completado').length;
+            const taskInProgress = tasks.filter(t => t.data.status === 'En progreso').length;
+            const taskPending = tasks.filter(t => t.data.status === 'Pendiente' || t.data.status === 'Por hacer').length;
+            const taskOverdue = tasks.filter(t => t.data.status !== 'Completado' && t.data.dueDate && new Date(t.data.dueDate) < new Date()).length;
+            const taskByPrio: Record<string, number> = {};
+            tasks.forEach(t => { const pr = t.data.priority || 'Otro'; taskByPrio[pr] = (taskByPrio[pr] || 0) + 1; });
+            const catSpend: Record<string, number> = {};
+            expenses.forEach(e => { const c = e.data.category || 'Otro'; catSpend[c] = (catSpend[c] || 0) + e.data.amount; });
+            const topCats = Object.entries(catSpend).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            const budgetPct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+            const membersByRole: Record<string, number> = {};
+            teamUsers.forEach(u => { const r = u.data.role || 'Miembro'; membersByRole[r] = (membersByRole[r] || 0) + 1; });
+            const tasksPerMember: Record<string, number> = {};
+            tasks.forEach(t => { if (t.data.assigneeId) { tasksPerMember[t.data.assigneeId] = (tasksPerMember[t.data.assigneeId] || 0) + 1; } });
+            const statusIcon: Record<string, string> = { 'Ejecucion': '🏗️', 'Terminado': '✅', 'Diseno': '🎨', 'Concepto': '📐', 'Pausado': '⏸️' };
+            const prioIcon: Record<string, string> = { 'Alta': '🔴', 'Media': '🟡', 'Baja': '🟢' };
+            return <div className="contents">
+              {/* Card 1: Estado de Proyectos */}
+              <div className="bg-[var(--af-bg2)] border border-[var(--border)] rounded-xl p-5">
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">📁 Estado de Proyectos</h3>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className="text-2xl font-bold text-[var(--af-accent)]">{projects.length}</div><div className="text-xs text-[var(--muted-foreground)] mt-1">Total Proyectos</div></div>
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className="text-2xl font-bold text-[var(--foreground)]">{fmtCOP(totalBudget)}</div><div className="text-xs text-[var(--muted-foreground)] mt-1">Presupuesto Total</div></div>
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className="text-2xl font-bold text-[var(--foreground)]">{fmtCOP(totalSpent)}</div><div className="text-xs text-[var(--muted-foreground)] mt-1">Gastado Total</div></div>
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className={`text-2xl font-bold ${budgetPct > 90 ? 'text-red-400' : budgetPct > 70 ? 'text-amber-400' : 'text-emerald-400'}`}>{budgetPct}%</div><div className="text-xs text-[var(--muted-foreground)] mt-1">Utilización</div></div>
+                </div>
+                {Object.keys(projByStatus).length > 0 && <div className="space-y-2 mb-4"><div className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">Por estado</div>{Object.entries(projByStatus).map(([st, cnt]) => (<div key={st} className="flex items-center gap-2"><span className="text-sm w-5">{statusIcon[st] || '📌'}</span><span className="text-sm text-[var(--foreground)] flex-1">{st}</span><span className="text-sm font-semibold text-[var(--foreground)]">{cnt}</span></div>))}</div>}
+                {projects.length > 0 && <div className="space-y-2"><div className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">Progreso por proyecto</div>{projects.slice(0, 5).map(p => (<div key={p.id}><div className="flex justify-between text-xs mb-1"><span className="text-[var(--foreground)] truncate mr-2">{p.data.name}</span><span className="text-[var(--muted-foreground)]">{p.data.progress || 0}%</span></div><div className="w-full bg-[var(--af-bg3)] rounded-full h-2"><div className="bg-[var(--af-accent)] rounded-full h-2 transition-all" style={{ width: `${p.data.progress || 0}%` }} /></div></div>))}{projects.length > 5 && <div className="text-xs text-[var(--muted-foreground)]">+{projects.length - 5} proyectos más</div>}</div>}
+              </div>
+              {/* Card 2: Tareas y Productividad */}
+              <div className="bg-[var(--af-bg2)] border border-[var(--border)] rounded-xl p-5">
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">✅ Tareas y Productividad</h3>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className="text-2xl font-bold text-[var(--af-accent)]">{tasks.length}</div><div className="text-xs text-[var(--muted-foreground)] mt-1">Total Tareas</div></div>
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className="text-2xl font-bold text-emerald-400">{taskCompleted}</div><div className="text-xs text-[var(--muted-foreground)] mt-1">Completadas</div></div>
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className="text-2xl font-bold text-blue-400">{taskInProgress}</div><div className="text-xs text-[var(--muted-foreground)] mt-1">En Progreso</div></div>
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className={`text-2xl font-bold ${taskOverdue > 0 ? 'text-red-400' : 'text-[var(--foreground)]'}`}>{taskPending}</div><div className="text-xs text-[var(--muted-foreground)] mt-1">Pendientes</div></div>
+                </div>
+                {taskOverdue > 0 && <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-4 flex items-center gap-2"><span className="text-red-400">⚠️</span><span className="text-sm text-red-400 font-medium">{taskOverdue} tarea{taskOverdue !== 1 ? 's' : ''} vencida{taskOverdue !== 1 ? 's' : ''}</span></div>}
+                {tasks.length > 0 && <div className="bg-[var(--af-bg3)] rounded-lg p-3 mb-3"><div className="text-xs font-medium text-[var(--muted-foreground)] mb-2">Completitud general</div><div className="flex justify-between text-xs mb-1"><span className="text-[var(--foreground)]">Progreso</span><span className="text-[var(--muted-foreground)]">{tasks.length > 0 ? Math.round((taskCompleted / tasks.length) * 100) : 0}%</span></div><div className="w-full bg-[var(--af-bg2)] rounded-full h-2.5"><div className="bg-emerald-400 rounded-full h-2.5 transition-all" style={{ width: `${tasks.length > 0 ? (taskCompleted / tasks.length) * 100 : 0}%` }} /></div></div>}
+                {Object.keys(taskByPrio).length > 0 && <div className="space-y-2"><div className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">Por prioridad</div>{Object.entries(taskByPrio).map(([pr, cnt]) => (<div key={pr} className="flex items-center gap-2"><span className="text-sm w-5">{prioIcon[pr] || '📌'}</span><span className="text-sm text-[var(--foreground)] flex-1">{pr}</span><span className="text-sm font-semibold text-[var(--foreground)]">{cnt}</span></div>))}</div>}
+              </div>
+              {/* Card 3: Presupuesto */}
+              <div className="bg-[var(--af-bg2)] border border-[var(--border)] rounded-xl p-5">
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">💰 Presupuesto</h3>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className="text-lg font-bold text-[var(--af-accent)]">{fmtCOP(totalBudget)}</div><div className="text-xs text-[var(--muted-foreground)] mt-1">Presupuesto</div></div>
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className="text-lg font-bold text-[var(--foreground)]">{fmtCOP(totalSpent)}</div><div className="text-xs text-[var(--muted-foreground)] mt-1">Gastado</div></div>
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className={`text-lg font-bold ${budgetPct > 90 ? 'text-red-400' : budgetPct > 70 ? 'text-amber-400' : 'text-emerald-400'}`}>{budgetPct}%</div><div className="text-xs text-[var(--muted-foreground)] mt-1">Utilizado</div></div>
+                </div>
+                <div className="bg-[var(--af-bg3)] rounded-lg p-3 mb-4"><div className="flex justify-between text-xs mb-1"><span className="text-[var(--foreground)]">Utilización del presupuesto</span><span className="text-[var(--muted-foreground)]">{fmtCOP(totalBudget - totalSpent)} restante</span></div><div className="w-full bg-[var(--af-bg2)] rounded-full h-3"><div className={`rounded-full h-3 transition-all ${budgetPct > 90 ? 'bg-red-400' : budgetPct > 70 ? 'bg-amber-400' : 'bg-emerald-400'}`} style={{ width: `${Math.min(budgetPct, 100)}%` }} /></div></div>
+                {/* Budget by project */}
+                {projects.length > 0 && projects.some(p => p.data.budget > 0) && <div className="space-y-2"><div className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">Presupuesto por proyecto</div>{projects.filter(p => p.data.budget > 0).sort((a, b) => b.data.budget - a.data.budget).slice(0, 5).map(p => {
+                  const spent = expenses.filter(e => e.data.projectId === p.id).reduce((s, e) => s + e.data.amount, 0);
+                  const pct = p.data.budget > 0 ? Math.round((spent / p.data.budget) * 100) : 0;
+                  return (<div key={p.id}><div className="flex justify-between text-xs mb-1"><span className="text-[var(--foreground)] truncate mr-2">{p.data.name}</span><span className="text-[var(--muted-foreground)]">{fmtCOP(spent)} / {fmtCOP(p.data.budget)}</span></div><div className="w-full bg-[var(--af-bg3)] rounded-full h-1.5"><div className={`rounded-full h-1.5 transition-all ${pct > 90 ? 'bg-red-400' : pct > 70 ? 'bg-amber-400' : 'bg-[var(--af-accent)]'}`} style={{ width: `${Math.min(pct, 100)}%` }} /></div></div>);
+                })}</div>}
+              </div>
+              {/* Card 4: Equipo */}
+              <div className="bg-[var(--af-bg2)] border border-[var(--border)] rounded-xl p-5">
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">👥 Equipo</h3>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className="text-2xl font-bold text-[var(--af-accent)]">{teamUsers.length}</div><div className="text-xs text-[var(--muted-foreground)] mt-1">Miembros</div></div>
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className="text-2xl font-bold text-[var(--foreground)]">{Object.keys(membersByRole).length}</div><div className="text-xs text-[var(--muted-foreground)] mt-1">Roles distintos</div></div>
+                </div>
+                {Object.keys(membersByRole).length > 0 && <div className="space-y-2 mb-4"><div className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">Miembros por rol</div>{Object.entries(membersByRole).sort((a, b) => b[1] - a[1]).map(([role, cnt]) => (<div key={role} className="flex items-center gap-2"><span className="text-sm w-5">{ROLE_ICONS[role] || '👤'}</span><span className="text-sm text-[var(--foreground)] flex-1">{role}</span><span className="text-sm font-semibold text-[var(--foreground)]">{cnt}</span></div>))}</div>}
+                {Object.keys(tasksPerMember).length > 0 && <div className="space-y-2"><div className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">Tareas asignadas por miembro</div>{Object.entries(tasksPerMember).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([uid, cnt]) => {const member = teamUsers.find(u => u.id === uid); return (<div key={uid} className="flex items-center gap-2"><div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ backgroundColor: avatarColor(uid) }}>{member ? getInitials(member.data.name) : '?'}</div><span className="text-sm text-[var(--foreground)] flex-1 truncate">{member ? member.data.name : uid}</span><span className="text-sm font-semibold text-[var(--foreground)]">{cnt}</span></div>);})}</div>}
+              </div>
+            </div>;
+          })()}
+        </div>)}
+
+        {/* Financial Report */}
+        {forms.reportTab === 'Financiero' && (<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {(() => {
+            const totalBudget = projects.reduce((s, p) => s + (p.data.budget || 0), 0);
+            const totalSpent = expenses.reduce((s, e) => s + (e.data.amount || 0), 0);
+            const totalInvoiced = invoices.filter(i => i.data.status !== 'Cancelada').reduce((s, i) => s + (i.data.total || 0), 0);
+            const totalPaid = invoices.filter(i => i.data.status === 'Pagada').reduce((s, i) => s + (i.data.total || 0), 0);
+            const totalPending = invoices.filter(i => i.data.status === 'Enviada' || i.data.status === 'Borrador').reduce((s, i) => s + (i.data.total || 0), 0);
+            const totalOverdue = invoices.filter(i => i.data.status === 'Vencida').reduce((s, i) => s + (i.data.total || 0), 0);
+            const totalBillable = timeEntries.filter(e => e.data.billable).reduce((s, e) => s + (e.data.duration || 0) * (e.data.rate || 0) / 60, 0);
+            const catSpend: Record<string, number> = {};
+            expenses.forEach(e => { const c = e.data.category || 'Otro'; catSpend[c] = (catSpend[c] || 0) + e.data.amount; });
+            const projBudget: { name: string; budget: number; spent: number }[] = projects.filter(p => p.data.budget > 0).map(p => ({ name: p.data.name, budget: p.data.budget, spent: expenses.filter(e => e.data.projectId === p.id).reduce((s, e) => s + e.data.amount, 0) }));
+            return (<>
+              <div className="lg:col-span-2 bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+                <h3 className="text-[15px] font-semibold mb-4">Resumen Financiero</h3>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  {[{ lbl: 'Presupuesto', val: fmtCOP(totalBudget), c: 'text-[var(--af-accent)]' }, { lbl: 'Gastado', val: fmtCOP(totalSpent), c: 'text-[var(--foreground)]' }, { lbl: 'Facturado', val: fmtCOP(totalInvoiced), c: 'text-blue-400' }, { lbl: 'Cobrado', val: fmtCOP(totalPaid), c: 'text-emerald-400' }, { lbl: 'Por cobrar', val: fmtCOP(totalPending + totalOverdue), c: totalOverdue > 0 ? 'text-red-400' : 'text-amber-400' }].map((m, i) => (
+                    <div key={i} className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className={`text-xl font-bold ${m.c}`}>{m.val}</div><div className="text-[11px] text-[var(--muted-foreground)]">{m.lbl}</div></div>
+                  ))}
+                </div>
+              </div>
+              {/* Alerts */}
+              {(totalOverdue > 0 || (totalBudget > 0 && totalSpent > totalBudget * 0.9)) && <div className="lg:col-span-2 space-y-2">
+                {totalOverdue > 0 && <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 flex items-center gap-2"><span className="text-red-400 text-lg">⚠️</span><span className="text-sm text-red-400 font-medium">Facturas vencidas por {fmtCOP(totalOverdue)}</span></div>}
+                {totalBudget > 0 && totalSpent > totalBudget * 0.9 && <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 flex items-center gap-2"><span className="text-amber-400 text-lg">⚠️</span><span className="text-sm text-amber-400 font-medium">Gasto al {Math.round(totalSpent / totalBudget * 100)}% del presupuesto</span></div>}
+              </div>}
+              {/* Budget vs Real by project */}
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+                <h3 className="text-[15px] font-semibold mb-4">Presupuesto vs Real por Proyecto</h3>
+                {projBudget.length === 0 ? <div className="text-sm text-[var(--muted-foreground)]">Sin proyectos con presupuesto</div> : (
+                  <div className="space-y-3">
+                    {projBudget.map(p => {
+                      const pct = p.budget > 0 ? Math.round((p.spent / p.budget) * 100) : 0;
+                      const overBudget = p.spent > p.budget;
+                      return (<div key={p.name}>
+                        <div className="flex justify-between text-xs mb-1"><span className="text-[var(--foreground)] truncate mr-2">{p.name}</span><span className={overBudget ? 'text-red-400 font-medium' : 'text-[var(--muted-foreground)]'}>{fmtCOP(p.spent)} / {fmtCOP(p.budget)} ({pct}%)</span></div>
+                        <div className="w-full bg-[var(--af-bg3)] rounded-full h-2.5"><div className={`rounded-full h-2.5 transition-all ${overBudget ? 'bg-red-400' : pct > 70 ? 'bg-amber-400' : 'bg-emerald-400'}`} style={{ width: `${Math.min(pct, 100)}%` }} /></div>
+                        {overBudget && <div className="text-[10px] text-red-400 mt-0.5">Excedido por {fmtCOP(p.spent - p.budget)}</div>}
+                      </div>);
+                    })}
+                  </div>
+                )}
+              </div>
+              {/* Gastos por categoría */}
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+                <h3 className="text-[15px] font-semibold mb-4">Gastos por Categoría</h3>
+                {Object.keys(catSpend).length === 0 ? <div className="text-sm text-[var(--muted-foreground)]">Sin gastos</div> : (
+                  <div className="space-y-2">
+                    {Object.entries(catSpend).sort((a, b) => b[1] - a[1]).map(([cat, amt]) => {
+                      const pct = totalSpent > 0 ? Math.round((amt / totalSpent) * 100) : 0;
+                      return (<div key={cat}><div className="flex justify-between text-xs mb-1"><span className="text-[var(--foreground)]">{cat}</span><span className="text-[var(--muted-foreground)]">{fmtCOP(amt)} ({pct}%)</span></div><div className="w-full bg-[var(--af-bg3)] rounded-full h-1.5"><div className="bg-[var(--af-accent)] rounded-full h-1.5" style={{ width: `${pct}%` }} /></div></div>);
+                    })}
+                  </div>
+                )}
+              </div>
+              {/* Rentabilidad */}
+              <div className="lg:col-span-2 bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+                <h3 className="text-[15px] font-semibold mb-4">Métricas de Rentabilidad</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {(() => {
+                    const margin = totalInvoiced > 0 ? Math.round(((totalInvoiced - totalSpent) / totalInvoiced) * 100) : 0;
+                    const collectionRate = totalInvoiced > 0 ? Math.round((totalPaid / totalInvoiced) * 100) : 0;
+                    const avgProject = projects.length > 0 ? totalBudget / projects.length : 0;
+                    const timeRevenue = totalBillable;
+                    return [
+                      { lbl: 'Margen', val: `${margin}%`, c: margin > 20 ? 'text-emerald-400' : margin > 0 ? 'text-amber-400' : 'text-red-400' },
+                      { lbl: 'Tasa de cobro', val: `${collectionRate}%`, c: collectionRate > 80 ? 'text-emerald-400' : 'text-amber-400' },
+                      { lbl: 'Promedio proyecto', val: fmtCOP(avgProject), c: 'text-[var(--af-accent)]' },
+                      { lbl: 'Horas facturables', val: fmtCOP(timeRevenue), c: 'text-blue-400' },
+                    ].map((m, i) => (<div key={i} className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className={`text-lg font-bold ${m.c}`}>{m.val}</div><div className="text-[11px] text-[var(--muted-foreground)]">{m.lbl}</div></div>));
+                  })()}
+                </div>
+              </div>
+            </>);
+          })()}
+        </div>)}
+
+        {/* Time Report */}
+        {forms.reportTab === 'Tiempo' && (<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {(() => {
+            const totalHrs = timeEntries.reduce((s, e) => s + (e.data.duration || 0), 0);
+            const billableHrs = timeEntries.filter(e => e.data.billable).reduce((s, e) => s + (e.data.duration || 0), 0);
+            const totalBillable = timeEntries.filter(e => e.data.billable).reduce((s, e) => s + (e.data.duration || 0) * (e.data.rate || 0) / 60, 0);
+            const thisWeek = timeEntries.filter(e => { if (!e.data.date) return false; const d = new Date(e.data.date); return d >= getWeekStart(); });
+            const weekHrs = thisWeek.reduce((s, e) => s + (e.data.duration || 0), 0);
+            const byProject: Record<string, { hrs: number; billable: number }> = {};
+            timeEntries.forEach(e => { if (!byProject[e.data.projectId]) byProject[e.data.projectId] = { hrs: 0, billable: 0 }; byProject[e.data.projectId].hrs += e.data.duration || 0; if (e.data.billable) byProject[e.data.projectId].billable += (e.data.duration || 0) * (e.data.rate || 0) / 60; });
+            const byUser: Record<string, number> = {};
+            timeEntries.forEach(e => { byUser[e.data.userId] = (byUser[e.data.userId] || 0) + (e.data.duration || 0); });
+            return (<>
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+                <h3 className="text-[15px] font-semibold mb-4">Resumen de Tiempo</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className="text-2xl font-bold text-[var(--af-accent)]">{fmtDuration(totalHrs)}</div><div className="text-[11px] text-[var(--muted-foreground)]">Total registrado</div></div>
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className="text-2xl font-bold text-emerald-400">{fmtDuration(billableHrs)}</div><div className="text-[11px] text-[var(--muted-foreground)]">Facturable</div></div>
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className="text-2xl font-bold text-blue-400">{fmtCOP(totalBillable)}</div><div className="text-[11px] text-[var(--muted-foreground)]">Valor facturable</div></div>
+                  <div className="bg-[var(--af-bg3)] rounded-lg p-3 text-center"><div className="text-2xl font-bold text-[var(--foreground)]">{fmtDuration(weekHrs)}</div><div className="text-[11px] text-[var(--muted-foreground)]">Esta semana</div></div>
+                </div>
+              </div>
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+                <h3 className="text-[15px] font-semibold mb-4">Horas por Proyecto</h3>
+                {Object.keys(byProject).length === 0 ? <div className="text-sm text-[var(--muted-foreground)]">Sin datos</div> : (
+                  <div className="space-y-2">{Object.entries(byProject).sort((a, b) => b[1].hrs - a[1].hrs).map(([pid, data]) => {
+                    const proj = projects.find(p => p.id === pid);
+                    return (<div key={pid}><div className="flex justify-between text-xs mb-1"><span className="text-[var(--foreground)] truncate mr-2">{proj?.data.name || pid}</span><span className="text-[var(--muted-foreground)]">{fmtDuration(data.hrs)} · {fmtCOP(data.billable)}</span></div><div className="w-full bg-[var(--af-bg3)] rounded-full h-1.5"><div className="bg-[var(--af-accent)] rounded-full h-1.5" style={{ width: `${(data.hrs / Math.max(...Object.values(byProject).map(v => v.hrs))) * 100}%` }} /></div></div>);
+                  })}</div>
+                )}
+              </div>
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+                <h3 className="text-[15px] font-semibold mb-4">Horas por Miembro</h3>
+                {Object.keys(byUser).length === 0 ? <div className="text-sm text-[var(--muted-foreground)]">Sin datos</div> : (
+                  <div className="space-y-2">{Object.entries(byUser).sort((a, b) => b[1] - a[1]).map(([uid, mins]) => {
+                    const user = teamUsers.find(u => u.id === uid);
+                    return (<div key={uid} className="flex items-center gap-2"><div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ backgroundColor: avatarColor(uid) }}>{user ? getInitials(user.data.name) : '?'}</div><span className="text-sm text-[var(--foreground)] flex-1">{user?.data.name || uid.substring(0, 10)}</span><span className="text-sm font-semibold">{fmtDuration(mins)}</span></div>);
+                  })}</div>
+                )}
+              </div>
+            </>);
+          })()}
+        </div>)}
+
+        {/* Team Report */}
+        {forms.reportTab === 'Equipo' && (<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {(() => {
+            const membersByRole: Record<string, number> = {};
+            teamUsers.forEach(u => { const r = u.data.role || 'Miembro'; membersByRole[r] = (membersByRole[r] || 0) + 1; });
+            const tasksPerMember: Record<string, { total: number; done: number; overdue: number }> = {};
+            teamUsers.forEach(u => { tasksPerMember[u.id] = { total: 0, done: 0, overdue: 0 }; });
+            tasks.forEach(t => { if (t.data.assigneeId && tasksPerMember[t.data.assigneeId]) { tasksPerMember[t.data.assigneeId].total++; if (t.data.status === 'Completado') tasksPerMember[t.data.assigneeId].done++; if (t.data.status !== 'Completado' && t.data.dueDate && new Date(t.data.dueDate) < new Date()) tasksPerMember[t.data.assigneeId].overdue++; } });
+            const hoursPerMember: Record<string, number> = {};
+            timeEntries.forEach(e => { hoursPerMember[e.data.userId] = (hoursPerMember[e.data.userId] || 0) + (e.data.duration || 0); });
+            return (<>
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+                <h3 className="text-[15px] font-semibold mb-4">Distribución por Roles</h3>
+                {Object.keys(membersByRole).length === 0 ? <div className="text-sm text-[var(--muted-foreground)]">Sin miembros</div> : (
+                  <div className="space-y-2">{Object.entries(membersByRole).sort((a, b) => b[1] - a[1]).map(([role, cnt]) => (
+                    <div key={role} className="flex items-center gap-2"><span className="text-sm w-5">{ROLE_ICONS[role] || '👤'}</span><div className="flex-1"><div className="flex justify-between text-xs mb-1"><span>{role}</span><span className="text-[var(--muted-foreground)]">{cnt}</span></div><div className="w-full bg-[var(--af-bg3)] rounded-full h-1.5"><div className="bg-[var(--af-accent)] rounded-full h-1.5" style={{ width: `${(cnt / teamUsers.length) * 100}%` }} /></div></div></div>
+                  ))}</div>
+                )}
+              </div>
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+                <h3 className="text-[15px] font-semibold mb-4">Productividad por Miembro</h3>
+                {/* Mobile: Team productivity card view */}
+                <div className="md:hidden space-y-2">
+                  {teamUsers.sort((a, b) => (tasksPerMember[b.id]?.total || 0) - (tasksPerMember[a.id]?.total || 0)).map(u => {
+                    const stats = tasksPerMember[u.id] || { total: 0, done: 0, overdue: 0 };
+                    const hrs = hoursPerMember[u.id] || 0;
+                    return (
+                      <div key={u.id} className="bg-[var(--af-bg3)] rounded-lg p-3 border border-[var(--border)] flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ backgroundColor: avatarColor(u.id) }}>{getInitials(u.data.name)}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] font-medium truncate">{u.data.name}</div>
+                          <div className="flex gap-3 mt-1 text-[10px] text-[var(--muted-foreground)]">
+                            <span>{stats.total} tareas</span>
+                            <span className="text-emerald-400">{stats.done} listas</span>
+                            <span>{stats.overdue > 0 ? <span className="text-red-400">{stats.overdue} vencidas</span> : '0 vencidas'}</span>
+                            <span>{fmtDuration(hrs)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Desktop: Team productivity table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="border-b border-[var(--border)] text-[var(--muted-foreground)] text-xs"><th className="text-left py-2 pr-3">Miembro</th><th className="text-center py-2 px-2">Tareas</th><th className="text-center py-2 px-2">Listas</th><th className="text-center py-2 px-2">Vencidas</th><th className="text-center py-2 pl-2">Horas</th></tr></thead>
+                    <tbody>
+                      {teamUsers.sort((a, b) => (tasksPerMember[b.id]?.total || 0) - (tasksPerMember[a.id]?.total || 0)).map(u => {
+                        const stats = tasksPerMember[u.id] || { total: 0, done: 0, overdue: 0 };
+                        const hrs = hoursPerMember[u.id] || 0;
+                        return (<tr key={u.id} className="border-b border-[var(--border)] last:border-0"><td className="py-2 pr-3"><div className="flex items-center gap-2"><div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ backgroundColor: avatarColor(u.id) }}>{getInitials(u.data.name)}</div><span className="text-xs truncate max-w-[80px]">{u.data.name}</span></div></td><td className="text-center py-2 px-2 text-xs">{stats.total}</td><td className="text-center py-2 px-2 text-xs text-emerald-400">{stats.done}</td><td className="text-center py-2 px-2 text-xs">{stats.overdue > 0 ? <span className="text-red-400">{stats.overdue}</span> : '0'}</td><td className="text-center py-2 pl-2 text-xs">{fmtDuration(hrs)}</td></tr>);
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>);
+          })()}
+        </div>)}
+      </div>)}

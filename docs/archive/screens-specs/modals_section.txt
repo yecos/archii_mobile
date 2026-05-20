@@ -1,0 +1,396 @@
+      {/* ===== MODALS ===== */}
+
+      {/* Project Modal */}
+      {modals.project && (<div className="fixed inset-0 bg-black/70 z-[100] flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn" onClick={() => closeModal('project')}>
+        <div className="bg-[var(--card)] border sm:border border-[var(--input)] sm:rounded-2xl rounded-t-2xl p-5 sm:p-6 w-full sm:w-[480px] sm:max-w-[95vw] max-h-[85dvh] sm:max-h-[85vh] overflow-y-auto animate-slideUp sm:animate-slideIn" onClick={e => e.stopPropagation()}>
+          <div className="text-lg font-semibold mb-5">{editingId ? 'Editar proyecto' : 'Nuevo proyecto'}</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Nombre *</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Ej: Casa Pérez" value={forms.projName || ''} onChange={e => setForms(p => ({ ...p, projName: e.target.value }))} /></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Estado</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.projStatus || 'Concepto'} onChange={e => setForms(p => ({ ...p, projStatus: e.target.value }))}><option value="Concepto">Concepto</option><option value="Diseno">Diseño</option><option value="Ejecucion">Ejecución</option><option value="Terminado">Terminado</option></select></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Cliente</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Nombre del cliente" value={forms.projClient || ''} onChange={e => setForms(p => ({ ...p, projClient: e.target.value }))} /></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Ubicación</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Barrio, Ciudad" value={forms.projLocation || ''} onChange={e => setForms(p => ({ ...p, projLocation: e.target.value }))} /></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Empresa</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.projCompany || ''} onChange={e => setForms(p => ({ ...p, projCompany: e.target.value }))}><option value="">Sin empresa asignada</option>{companies.map(c => <option key={c.id} value={c.id}>{c.data.name}</option>)}</select></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Presupuesto (COP)</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" type="number" placeholder="48000000" value={forms.projBudget || ''} onChange={e => setForms(p => ({ ...p, projBudget: e.target.value }))} /></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Fecha inicio</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" type="date" value={forms.projStart || ''} onChange={e => setForms(p => ({ ...p, projStart: e.target.value }))} /></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Fecha entrega</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" type="date" value={forms.projEnd || ''} onChange={e => setForms(p => ({ ...p, projEnd: e.target.value }))} /></div>
+          </div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Presupuesto (COP)</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" type="number" placeholder="48000000" value={forms.projBudget || ''} onChange={e => setForms(p => ({ ...p, projBudget: e.target.value }))} /></div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Descripción</label><textarea className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)] resize-none" rows="2" placeholder="Descripción..." value={forms.projDesc || ''} onChange={e => setForms(p => ({ ...p, projDesc: e.target.value }))} /></div>
+          <div className="flex gap-2 justify-end mt-5 pt-4 border-t border-[var(--border)]">
+            <button className="px-4 py-2 rounded-lg text-[13px] font-medium cursor-pointer bg-transparent text-[var(--muted-foreground)] border border-[var(--input)] hover:bg-[var(--af-bg3)] hover:text-[var(--foreground)] transition-all" onClick={() => closeModal('project')}>Cancelar</button>
+            <button className="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer bg-[var(--af-accent)] text-background border-none hover:bg-[var(--af-accent2)] transition-colors" onClick={saveProject}>{editingId ? 'Guardar' : 'Crear proyecto'}</button>
+          </div>
+        </div>
+      </div>)}
+
+      {/* Task Modal */}
+      {modals.task && (<div className="fixed inset-0 bg-black/70 z-[100] flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn" onClick={() => closeModal('task')}>
+        <div className="bg-[var(--card)] border sm:border border-[var(--input)] sm:rounded-2xl rounded-t-2xl p-5 sm:p-6 w-full sm:w-[480px] sm:max-w-[95vw] max-h-[85dvh] sm:max-h-[85vh] overflow-y-auto animate-slideUp sm:animate-slideIn" onClick={e => e.stopPropagation()}>
+          <div className="text-lg font-semibold mb-5">{editingId ? 'Editar tarea' : 'Nueva tarea'}</div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Título *</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="¿Qué hay que hacer?" value={forms.taskTitle || ''} onChange={e => setForms(p => ({ ...p, taskTitle: e.target.value }))} /></div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Descripción</label><textarea className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)] resize-none" rows="2" placeholder="Detalles adicionales..." value={forms.taskDescription || ''} onChange={e => setForms(p => ({ ...p, taskDescription: e.target.value }))} /></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Proyecto</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.taskProject || ''} onChange={e => setForms(p => ({ ...p, taskProject: e.target.value }))}><option value="">Sin proyecto</option>{projects.map(p => <option key={p.id} value={p.id}>{p.data.name}</option>)}</select></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Responsable</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.taskAssignee || ''} onChange={e => setForms(p => ({ ...p, taskAssignee: e.target.value }))}><option value="">Sin asignar</option>{teamUsers.map(u => <option key={u.id} value={u.id}>{u.data.name}{u.id === authUser?.uid ? ' (Tú)' : ''}</option>)}</select></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Prioridad</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.taskPriority || 'Media'} onChange={e => setForms(p => ({ ...p, taskPriority: e.target.value }))}><option value="Alta">Alta</option><option value="Media">Media</option><option value="Baja">Baja</option></select></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Estado</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.taskStatus || 'Por hacer'} onChange={e => setForms(p => ({ ...p, taskStatus: e.target.value }))}><option value="Por hacer">Por hacer</option><option value="En progreso">En progreso</option><option value="Revision">Revisión</option><option value="Completado">Completado</option></select></div>
+          </div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Fecha límite</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" type="date" value={forms.taskDue || ''} onChange={e => setForms(p => ({ ...p, taskDue: e.target.value }))} /></div>
+          <div className="flex gap-2 justify-end mt-5 pt-4 border-t border-[var(--border)]">
+            <button className="px-4 py-2 rounded-lg text-[13px] font-medium cursor-pointer bg-transparent text-[var(--muted-foreground)] border border-[var(--input)] hover:bg-[var(--af-bg3)] hover:text-[var(--foreground)] transition-all" onClick={() => closeModal('task')}>Cancelar</button>
+            <button className="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer bg-[var(--af-accent)] text-background border-none hover:bg-[var(--af-accent2)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed" onClick={saveTask} disabled={isSavingTask}>{isSavingTask ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear tarea'}</button>
+          </div>
+        </div>
+      </div>)}
+
+      {/* Expense Modal */}
+      {modals.expense && (<div className="fixed inset-0 bg-black/70 z-[100] flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn" onClick={() => closeModal('expense')}>
+        <div className="bg-[var(--card)] border sm:border border-[var(--input)] sm:rounded-2xl rounded-t-2xl p-5 sm:p-6 w-full sm:w-[480px] sm:max-w-[95vw] max-h-[85dvh] sm:max-h-[85vh] overflow-y-auto animate-slideUp sm:animate-slideIn" onClick={e => e.stopPropagation()}>
+          <div className="text-lg font-semibold mb-5">Registrar gasto</div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Concepto *</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Descripción del gasto" value={forms.expConcept || ''} onChange={e => setForms(p => ({ ...p, expConcept: e.target.value }))} /></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Proyecto</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.expProject || ''} onChange={e => setForms(p => ({ ...p, expProject: e.target.value }))}><option value="">Sin proyecto</option>{projects.map(p => <option key={p.id} value={p.id}>{p.data.name}</option>)}</select></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Categoría</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.expCategory || 'Materiales'} onChange={e => setForms(p => ({ ...p, expCategory: e.target.value }))}>{EXPENSE_CATS.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Monto (COP)</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" type="number" placeholder="0" value={forms.expAmount || ''} onChange={e => setForms(p => ({ ...p, expAmount: e.target.value }))} /></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Fecha</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" type="date" value={forms.expDate || ''} onChange={e => setForms(p => ({ ...p, expDate: e.target.value }))} /></div>
+          </div>
+          <div className="flex gap-2 justify-end mt-5 pt-4 border-t border-[var(--border)]">
+            <button className="px-4 py-2 rounded-lg text-[13px] font-medium cursor-pointer bg-transparent text-[var(--muted-foreground)] border border-[var(--input)] hover:bg-[var(--af-bg3)] hover:text-[var(--foreground)] transition-all" onClick={() => closeModal('expense')}>Cancelar</button>
+            <button className="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer bg-[var(--af-accent)] text-background border-none hover:bg-[var(--af-accent2)] transition-colors" onClick={saveExpense}>Registrar</button>
+          </div>
+        </div>
+      </div>)}
+
+      {/* Supplier Modal */}
+      {modals.supplier && (<div className="fixed inset-0 bg-black/70 z-[100] flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn" onClick={() => closeModal('supplier')}>
+        <div className="bg-[var(--card)] border sm:border border-[var(--input)] sm:rounded-2xl rounded-t-2xl p-5 sm:p-6 w-full sm:w-[480px] sm:max-w-[95vw] max-h-[85dvh] sm:max-h-[85vh] overflow-y-auto animate-slideUp sm:animate-slideIn" onClick={e => e.stopPropagation()}>
+          <div className="text-lg font-semibold mb-5">{editingId ? 'Editar proveedor' : 'Nuevo proveedor'}</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Nombre *</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Nombre del proveedor" value={forms.supName || ''} onChange={e => setForms(p => ({ ...p, supName: e.target.value }))} /></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Categoría</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.supCategory || 'Otro'} onChange={e => setForms(p => ({ ...p, supCategory: e.target.value }))}>{SUPPLIER_CATS.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Teléfono</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="+57 300..." value={forms.supPhone || ''} onChange={e => setForms(p => ({ ...p, supPhone: e.target.value }))} /></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Email</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="contacto@empresa.com" value={forms.supEmail || ''} onChange={e => setForms(p => ({ ...p, supEmail: e.target.value }))} /></div>
+          </div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Dirección</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Dirección" value={forms.supAddress || ''} onChange={e => setForms(p => ({ ...p, supAddress: e.target.value }))} /></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Sitio web</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="www.empresa.com" value={forms.supWebsite || ''} onChange={e => setForms(p => ({ ...p, supWebsite: e.target.value }))} /></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Calificación (1-5)</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.supRating || '5'} onChange={e => setForms(p => ({ ...p, supRating: e.target.value }))}>{[1,2,3,4,5].map(n => <option key={n} value={n}>{'★'.repeat(n)}{'☆'.repeat(5-n)} ({n})</option>)}</select></div>
+          </div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Notas</label><textarea className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)] resize-none" rows="2" placeholder="Notas..." value={forms.supNotes || ''} onChange={e => setForms(p => ({ ...p, supNotes: e.target.value }))} /></div>
+          <div className="flex gap-2 justify-end mt-5 pt-4 border-t border-[var(--border)]">
+            <button className="px-4 py-2 rounded-lg text-[13px] font-medium cursor-pointer bg-transparent text-[var(--muted-foreground)] border border-[var(--input)] hover:bg-[var(--af-bg3)] hover:text-[var(--foreground)] transition-all" onClick={() => closeModal('supplier')}>Cancelar</button>
+            <button className="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer bg-[var(--af-accent)] text-background border-none hover:bg-[var(--af-accent2)] transition-colors" onClick={saveSupplier}>{editingId ? 'Guardar' : 'Crear proveedor'}</button>
+          </div>
+        </div>
+      </div>)}
+
+      {/* Time Entry Modal */}
+      {modals.timeEntry && (<div className="fixed inset-0 bg-black/70 z-[100] flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn" onClick={() => closeModal('timeEntry')}>
+        <div className="bg-[var(--card)] border sm:border border-[var(--input)] sm:rounded-2xl rounded-t-2xl p-5 sm:p-6 w-full sm:w-[480px] sm:max-w-[95vw] sm:max-h-[85vh] overflow-y-auto animate-slideUp sm:animate-slideIn" onClick={e => e.stopPropagation()}>
+          <h3 className="text-lg font-semibold mb-4">Registro Manual de Tiempo</h3>
+          <div className="space-y-3">
+            <select className="w-full bg-[var(--af-bg3)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm text-[var(--foreground)] outline-none" value={forms.teProject || ''} onChange={e => setForms(p => ({ ...p, teProject: e.target.value }))}>
+              <option value="">Seleccionar proyecto</option>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.data.name}</option>)}
+            </select>
+            <select className="w-full bg-[var(--af-bg3)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm text-[var(--foreground)] outline-none" value={forms.tePhase || ''} onChange={e => setForms(p => ({ ...p, tePhase: e.target.value }))}>
+              <option value="">Fase (opcional)</option>
+              {DEFAULT_PHASES.map(ph => <option key={ph} value={ph}>{ph}</option>)}
+            </select>
+            <textarea className="w-full bg-[var(--af-bg3)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm text-[var(--foreground)] outline-none resize-none" rows={2} placeholder="Descripcion de la actividad" value={forms.teDescription || ''} onChange={e => setForms(p => ({ ...p, teDescription: e.target.value }))} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-[var(--muted-foreground)] mb-1 block">Fecha</label>
+                <input type="date" className="w-full bg-[var(--af-bg3)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm text-[var(--foreground)] outline-none" value={forms.teDate || ''} onChange={e => setForms(p => ({ ...p, teDate: e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-xs text-[var(--muted-foreground)] mb-1 block">Duracion (min)</label>
+                <input type="number" className="w-full bg-[var(--af-bg3)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm text-[var(--foreground)] outline-none" placeholder="Ej: 120" value={forms.teManualDuration || ''} onChange={e => setForms(p => ({ ...p, teManualDuration: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-[var(--muted-foreground)] mb-1 block">Hora inicio</label>
+                <input type="time" className="w-full bg-[var(--af-bg3)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm text-[var(--foreground)] outline-none" value={forms.teStartTime || ''} onChange={e => setForms(p => ({ ...p, teStartTime: e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-xs text-[var(--muted-foreground)] mb-1 block">Hora fin</label>
+                <input type="time" className="w-full bg-[var(--af-bg3)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm text-[var(--foreground)] outline-none" value={forms.teEndTime || ''} onChange={e => setForms(p => ({ ...p, teEndTime: e.target.value }))} />
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={forms.teBillable !== false} onChange={e => setForms(p => ({ ...p, teBillable: e.target.checked }))} className="w-4 h-4 accent-[var(--af-accent)]" /><span className="text-sm">Facturable</span></label>
+              <div className="flex items-center gap-2 flex-1"><span className="text-xs text-[var(--muted-foreground)]">Tarifa/h:</span><input type="number" className="flex-1 bg-[var(--af-bg3)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.teRate || 50000} onChange={e => setForms(p => ({ ...p, teRate: e.target.value }))} /></div>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-5">
+            <button className="flex-1 px-4 py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer bg-[var(--af-bg3)] text-[var(--foreground)] border border-[var(--border)]" onClick={() => closeModal('timeEntry')}>Cancelar</button>
+            <button className="flex-1 px-4 py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer bg-[var(--af-accent)] text-background border-none" onClick={saveManualTimeEntry}>Guardar</button>
+          </div>
+        </div>
+      </div>)}
+
+      {/* Approval Modal */}
+      {modals.approval && (<div className="fixed inset-0 bg-black/70 z-[100] flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn" onClick={() => closeModal('approval')}>
+        <div className="bg-[var(--card)] border sm:border border-[var(--input)] sm:rounded-2xl rounded-t-2xl p-5 sm:p-6 w-full sm:w-[480px] sm:max-w-[95vw] sm:max-h-[85vh] overflow-y-auto animate-slideUp sm:animate-slideIn" onClick={e => e.stopPropagation()}>
+          <div className="text-lg font-semibold mb-5">Nueva aprobación</div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Título *</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="¿Qué necesita aprobación?" value={forms.appTitle || ''} onChange={e => setForms(p => ({ ...p, appTitle: e.target.value }))} /></div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Descripción</label><textarea className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)] resize-none" rows="3" placeholder="Detalles..." value={forms.appDesc || ''} onChange={e => setForms(p => ({ ...p, appDesc: e.target.value }))} /></div>
+          <div className="flex gap-2 justify-end mt-5 pt-4 border-t border-[var(--border)]">
+            <button className="px-4 py-2 rounded-lg text-[13px] font-medium cursor-pointer bg-transparent text-[var(--muted-foreground)] border border-[var(--input)] hover:bg-[var(--af-bg3)] hover:text-[var(--foreground)] transition-all" onClick={() => closeModal('approval')}>Cancelar</button>
+            <button className="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer bg-[var(--af-accent)] text-background border-none hover:bg-[var(--af-accent2)] transition-colors" onClick={saveApproval}>Crear</button>
+          </div>
+        </div>
+      </div>)}
+
+      {/* Meeting Modal */}
+      {modals.meeting && (<div className="fixed inset-0 bg-black/70 z-[100] flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn" onClick={() => closeModal('meeting')}>
+        <div className="bg-[var(--card)] border sm:border border-[var(--input)] sm:rounded-2xl rounded-t-2xl p-5 sm:p-6 w-full sm:w-[480px] sm:max-w-[95vw] max-h-[85dvh] sm:max-h-[85vh] overflow-y-auto animate-slideUp sm:animate-slideIn" onClick={e => e.stopPropagation()}>
+          <div className="text-lg font-semibold mb-5">{editingId ? 'Editar reunión' : 'Nueva reunión'}</div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Título *</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Ej: Junta de obra" value={forms.meetTitle || ''} onChange={e => setForms(p => ({ ...p, meetTitle: e.target.value }))} /></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Proyecto</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.meetProject || ''} onChange={e => setForms(p => ({ ...p, meetProject: e.target.value }))}><option value="">Sin proyecto</option>{projects.map(p => <option key={p.id} value={p.id}>{p.data.name}</option>)}</select></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Fecha *</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" type="date" value={forms.meetDate || ''} onChange={e => setForms(p => ({ ...p, meetDate: e.target.value }))} /></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Hora</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" type="time" value={forms.meetTime || '09:00'} onChange={e => setForms(p => ({ ...p, meetTime: e.target.value }))} /></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Duración</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.meetDuration || '60'} onChange={e => setForms(p => ({ ...p, meetDuration: e.target.value }))}><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">1 hora</option><option value="90">1.5 horas</option><option value="120">2 horas</option></select></div>
+          </div>
+          <div className="mb-3">
+            <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Participantes (separados por coma)</label>
+            <input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Nombre 1, Nombre 2, ..." value={forms.meetAttendees || ''} onChange={e => setForms(p => ({ ...p, meetAttendees: e.target.value }))} />
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {teamUsers.slice(0, 8).map(u => {
+                const currentAttendees = (forms.meetAttendees || '').split(',').map((s: string) => s.trim().toLowerCase());
+                const isSelected = currentAttendees.includes(u.data.name.toLowerCase());
+                return (
+                  <button key={u.id} type="button" className={`text-[10px] px-2 py-1 rounded-full cursor-pointer transition-all border ${isSelected ? 'bg-[var(--af-accent)]/10 text-[var(--af-accent)] border-[var(--af-accent)]/30' : 'bg-[var(--af-bg4)] text-[var(--muted-foreground)] border-[var(--border)] hover:border-[var(--input)]'}`} onClick={() => {
+                    const current = (forms.meetAttendees || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+                    if (isSelected) { setForms(p => ({ ...p, meetAttendees: current.filter((n: string) => n.toLowerCase() !== u.data.name.toLowerCase()).join(', ') })); }
+                    else { setForms(p => ({ ...p, meetAttendees: [...current, u.data.name].join(', ') })); }
+                  }}>{u.data.name}</button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Descripción</label><textarea className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)] resize-none" rows="2" placeholder="Agenda o notas de la reunión..." value={forms.meetDesc || ''} onChange={e => setForms(p => ({ ...p, meetDesc: e.target.value }))} /></div>
+          <div className="flex gap-2 justify-end mt-5 pt-4 border-t border-[var(--border)]">
+            <button className="px-4 py-2 rounded-lg text-[13px] font-medium cursor-pointer bg-transparent text-[var(--muted-foreground)] border border-[var(--input)] hover:bg-[var(--af-bg3)] hover:text-[var(--foreground)] transition-all" onClick={() => closeModal('meeting')}>Cancelar</button>
+            <button className="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer bg-[var(--af-accent)] text-background border-none hover:bg-[var(--af-accent2)] transition-colors" onClick={saveMeeting}>{editingId ? 'Guardar' : 'Crear reunión'}</button>
+          </div>
+        </div>
+      </div>)}
+
+      {/* Gallery Photo Modal */}
+      {modals.gallery && (<div className="fixed inset-0 bg-black/70 z-[100] flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn" onClick={() => closeModal('gallery')}>
+  <div className="bg-[var(--card)] border sm:border border-[var(--input)] sm:rounded-2xl rounded-t-2xl p-5 sm:p-6 w-full sm:w-[480px] sm:max-w-[95vw] max-h-[85dvh] sm:max-h-[85vh] overflow-y-auto animate-slideUp sm:animate-slideIn" onClick={e => e.stopPropagation()}>
+    <div className="text-lg font-semibold mb-5">{editingId ? 'Editar foto' : '📸 Agregar foto'}</div>
+    
+    {/* Image preview / upload area */}
+    <div className="mb-4">
+      <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Foto *</label>
+      {forms.galleryImageData ? (
+        <div className="relative rounded-xl overflow-hidden border border-[var(--border)]">
+          <img src={forms.galleryImageData} alt="Preview" className="w-full max-h-[200px] object-contain bg-[var(--af-bg3)]" />
+          <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center text-sm hover:bg-black/70 transition-colors" onClick={() => setForms(p => ({ ...p, galleryImageData: '' }))}>✕</button>
+        </div>
+      ) : (
+        <label className="flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed border-[var(--border)] rounded-xl cursor-pointer hover:border-[var(--af-accent)]/50 transition-colors bg-[var(--af-bg3)]">
+          <svg viewBox="0 0 24 24" className="w-8 h-8 text-[var(--muted-foreground)]" stroke="currentColor" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span className="text-sm text-[var(--muted-foreground)]">Toca para seleccionar una imagen</span>
+          <span className="text-[10px] text-[var(--muted-foreground)]">JPG, PNG, WebP — máx. 5 MB</span>
+          <input type="file" accept="image/*" className="hidden" onChange={handleGalleryImageSelect} />
+        </label>
+      )}
+    </div>
+    
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+      <div>
+        <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Proyecto</label>
+        <select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.galleryProject || ''} onChange={e => setForms(p => ({ ...p, galleryProject: e.target.value }))}>
+          <option value="">Sin proyecto</option>
+          {projects.map(p => <option key={p.id} value={p.id}>{p.data.name}</option>)}
+        </select>
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Categoría</label>
+        <select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.galleryCategory || 'Otro'} onChange={e => setForms(p => ({ ...p, galleryCategory: e.target.value }))}>
+          {PHOTO_CATS.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
+    </div>
+    <div className="mb-3">
+      <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Descripción</label>
+      <input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Ej: Vista frontal del proyecto" value={forms.galleryCaption || ''} onChange={e => setForms(p => ({ ...p, galleryCaption: e.target.value }))} />
+    </div>
+    <div className="flex gap-2 justify-end mt-5 pt-4 border-t border-[var(--border)]">
+      <button className="px-4 py-2 rounded-lg text-[13px] font-medium cursor-pointer bg-transparent text-[var(--muted-foreground)] border border-[var(--input)] hover:bg-[var(--af-bg3)] hover:text-[var(--foreground)] transition-all" onClick={() => closeModal('gallery')}>Cancelar</button>
+      <button className="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer bg-[var(--af-accent)] text-background border-none hover:bg-[var(--af-accent2)] transition-colors" onClick={saveGalleryPhoto}>{editingId ? 'Guardar' : 'Subir foto'}</button>
+    </div>
+  </div>
+</div>)}
+
+      {/* Inventory Product Modal */}
+      {modals.invProduct && (<div className="fixed inset-0 bg-black/70 z-[100] flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn" onClick={() => closeModal('invProduct')}>
+        <div className="bg-[var(--card)] border sm:border border-[var(--input)] sm:rounded-2xl rounded-t-2xl p-5 sm:p-6 w-full sm:w-[520px] sm:max-w-[95vw] max-h-[85dvh] sm:max-h-[85vh] overflow-y-auto animate-slideUp sm:animate-slideIn" onClick={e => e.stopPropagation()}>
+          <div className="text-lg font-semibold mb-5">{editingId ? 'Editar producto' : '📦 Nuevo producto'}</div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="col-span-2"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Nombre *</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Ej: Cemento Portland" value={forms.invProdName || ''} onChange={e => setForms(p => ({ ...p, invProdName: e.target.value }))} /></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">SKU</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" placeholder="CMP-001" value={forms.invProdSku || ''} onChange={e => setForms(p => ({ ...p, invProdSku: e.target.value }))} /></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Categoría</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.invProdCat || ''} onChange={e => setForms(p => ({ ...p, invProdCat: e.target.value }))}><option value="">Sin categoría</option>{invCategories.map(c => <option key={c.id} value={c.id}>{c.data.name}</option>)}</select></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Unidad</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.invProdUnit || 'Unidad'} onChange={e => setForms(p => ({ ...p, invProdUnit: e.target.value }))}>{INV_UNITS.map(u => <option key={u} value={u}>{u}</option>)}</select></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Precio unit. (COP)</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" type="number" placeholder="50000" value={forms.invProdPrice || ''} onChange={e => setForms(p => ({ ...p, invProdPrice: e.target.value }))} /></div>
+          </div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Stock por almacén</label>
+            <div className="space-y-2">
+              {INV_WAREHOUSES.map(wh => (
+                <div key={wh} className="flex items-center gap-2">
+                  <span className="text-xs text-[var(--muted-foreground)] w-36 sm:w-44 flex-shrink-0 truncate">{wh}</span>
+                  <input className="flex-1 bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-1.5 text-sm text-[var(--foreground)] outline-none" type="number" placeholder="0" value={forms[`invProdWS_${wh.replace(/\s/g, '_')}`] || '0'} onChange={e => setForms(p => ({ ...p, [`invProdWS_${wh.replace(/\s/g, '_')}`]: e.target.value }))} />
+                  <span className="text-xs text-[var(--muted-foreground)] w-8">{forms.invProdUnit || 'Unidad'}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Product Image */}
+          <div className="mb-3">
+            <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Foto del producto</label>
+            {forms.invProdImage ? (
+              <div className="relative rounded-xl overflow-hidden border border-[var(--border)] inline-block">
+                <img src={forms.invProdImage} alt="Preview" className="w-full max-h-[140px] object-contain bg-[var(--af-bg3)]" />
+                <button className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center text-xs hover:bg-black/70 transition-colors cursor-pointer" onClick={() => setForms(p => ({ ...p, invProdImage: '' }))}>✕</button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center gap-1.5 p-5 border-2 border-dashed border-[var(--border)] rounded-xl cursor-pointer hover:border-[var(--af-accent)]/50 transition-colors bg-[var(--af-bg3)]">
+                <svg viewBox="0 0 24 24" className="w-6 h-6 text-[var(--muted-foreground)]" stroke="currentColor" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span className="text-xs text-[var(--muted-foreground)]">Toca para agregar foto</span>
+                <span className="text-[10px] text-[var(--muted-foreground)]">JPG, PNG — máx 3 MB</span>
+                <input type="file" accept="image/*" className="hidden" onChange={handleInvProductImageSelect} />
+              </label>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Stock mínimo (total)</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" type="number" placeholder="5" value={forms.invProdMinStock || '5'} onChange={e => setForms(p => ({ ...p, invProdMinStock: e.target.value }))} /></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Almacén principal</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.invProdWarehouse || 'Almacén Principal'} onChange={e => setForms(p => ({ ...p, invProdWarehouse: e.target.value }))}>{INV_WAREHOUSES.map(w => <option key={w} value={w}>{w}</option>)}</select></div>
+          </div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Descripción</label><textarea className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)] resize-none" rows="2" placeholder="Descripción..." value={forms.invProdDesc || ''} onChange={e => setForms(p => ({ ...p, invProdDesc: e.target.value }))} /></div>
+          <div className="flex gap-2 justify-end mt-5 pt-4 border-t border-[var(--border)]">
+            <button className="px-4 py-2 rounded-lg text-[13px] font-medium cursor-pointer bg-transparent text-[var(--muted-foreground)] border border-[var(--input)] hover:bg-[var(--af-bg3)] hover:text-[var(--foreground)] transition-all" onClick={() => closeModal('invProduct')}>Cancelar</button>
+            <button className="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer bg-[var(--af-accent)] text-background border-none hover:bg-[var(--af-accent2)] transition-colors" onClick={saveInvProduct}>{editingId ? 'Guardar' : 'Crear producto'}</button>
+          </div>
+        </div>
+      </div>)}
+
+      {/* Inventory Category Modal */}
+      {modals.invCategory && (<div className="fixed inset-0 bg-black/70 z-[100] flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn" onClick={() => closeModal('invCategory')}>
+        <div className="bg-[var(--card)] border sm:border border-[var(--input)] sm:rounded-2xl rounded-t-2xl p-5 sm:p-6 w-full sm:w-[420px] sm:max-w-[95vw] max-h-[85dvh] sm:max-h-[85vh] overflow-y-auto animate-slideUp sm:animate-slideIn" onClick={e => e.stopPropagation()}>
+          <div className="text-lg font-semibold mb-5">{editingId ? 'Editar categoría' : '🏷️ Nueva categoría'}</div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Nombre *</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Ej: Materiales" value={forms.invCatName || ''} onChange={e => setForms(p => ({ ...p, invCatName: e.target.value }))} /></div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Color</label><div className="flex flex-wrap gap-2">{CAT_COLORS.map(color => (<button key={color} className={`w-8 h-8 rounded-lg border-2 cursor-pointer transition-transform ${forms.invCatColor === color ? 'border-[var(--foreground)] scale-110' : 'border-transparent'}`} style={{ backgroundColor: color }} onClick={() => setForms(p => ({ ...p, invCatColor: color }))} />))}</div></div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Descripción</label><textarea className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)] resize-none" rows="2" placeholder="Descripción..." value={forms.invCatDesc || ''} onChange={e => setForms(p => ({ ...p, invCatDesc: e.target.value }))} /></div>
+          <div className="flex gap-2 justify-end mt-5 pt-4 border-t border-[var(--border)]">
+            <button className="px-4 py-2 rounded-lg text-[13px] font-medium cursor-pointer bg-transparent text-[var(--muted-foreground)] border border-[var(--input)] hover:bg-[var(--af-bg3)] hover:text-[var(--foreground)] transition-all" onClick={() => closeModal('invCategory')}>Cancelar</button>
+            <button className="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer bg-[var(--af-accent)] text-background border-none hover:bg-[var(--af-accent2)] transition-colors" onClick={saveInvCategory}>{editingId ? 'Guardar' : 'Crear categoría'}</button>
+          </div>
+        </div>
+      </div>)}
+
+      {/* Inventory Movement Modal */}
+      {modals.invMovement && (<div className="fixed inset-0 bg-black/70 z-[100] flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn" onClick={() => closeModal('invMovement')}>
+        <div className="bg-[var(--card)] border sm:border border-[var(--input)] sm:rounded-2xl rounded-t-2xl p-5 sm:p-6 w-full sm:w-[480px] sm:max-w-[95vw] max-h-[85dvh] sm:max-h-[85vh] overflow-y-auto animate-slideUp sm:animate-slideIn" onClick={e => e.stopPropagation()}>
+          <div className="text-lg font-semibold mb-5">📋 Registrar movimiento</div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Tipo *</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button className={`py-2.5 rounded-lg text-sm font-medium cursor-pointer border transition-all ${forms.invMovType === 'Entrada' ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-400' : 'bg-[var(--af-bg3)] border-[var(--border)] text-[var(--muted-foreground)]'}`} onClick={() => setForms(p => ({ ...p, invMovType: 'Entrada' }))}>↓ Entrada</button>
+              <button className={`py-2.5 rounded-lg text-sm font-medium cursor-pointer border transition-all ${forms.invMovType === 'Salida' ? 'bg-red-500/15 border-red-500/50 text-red-400' : 'bg-[var(--af-bg3)] border-[var(--border)] text-[var(--muted-foreground)]'}`} onClick={() => setForms(p => ({ ...p, invMovType: 'Salida' }))}>↑ Salida</button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="col-span-2"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Producto *</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.invMovProduct || ''} onChange={e => setForms(p => ({ ...p, invMovProduct: e.target.value }))}><option value="">Seleccionar producto</option>{invProducts.map(p => <option key={p.id} value={p.id}>{p.data.name} (Total: {getTotalStock(p)})</option>)}</select></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Almacén *</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.invMovWarehouse || 'Almacén Principal'} onChange={e => setForms(p => ({ ...p, invMovWarehouse: e.target.value }))}>{INV_WAREHOUSES.map(w => <option key={w} value={w}>{w}</option>)}</select></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Cantidad *</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" type="number" placeholder="10" min="1" value={forms.invMovQty || ''} onChange={e => setForms(p => ({ ...p, invMovQty: e.target.value }))} /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Fecha</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" type="date" value={forms.invMovDate || new Date().toISOString().split('T')[0]} onChange={e => setForms(p => ({ ...p, invMovDate: e.target.value }))} /></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Referencia</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" placeholder="Factura #..." value={forms.invMovRef || ''} onChange={e => setForms(p => ({ ...p, invMovRef: e.target.value }))} /></div>
+          </div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Motivo</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" placeholder="Compra proveedor, Uso en obra..." value={forms.invMovReason || ''} onChange={e => setForms(p => ({ ...p, invMovReason: e.target.value }))} /></div>
+          {forms.invMovProduct && (() => { const prod = invProducts.find(p => p.id === forms.invMovProduct); if (!prod) return null; const wh = forms.invMovWarehouse || 'Almacén Principal'; const curStock = getWarehouseStock(prod, wh); const qty = Number(forms.invMovQty || 0); return (
+            <div className={`rounded-lg p-3 mb-3 text-sm border ${forms.invMovType === 'Salida' && qty > curStock ? 'bg-red-500/10 border-red-500/30' : 'bg-[var(--af-bg3)] border-[var(--border)]'}`}>
+              <div className="flex justify-between"><span className="text-[var(--muted-foreground)]">Stock en {wh}:</span><span className="font-medium">{curStock} {prod.data.unit}</span></div>
+              {qty > 0 && (<div className="flex justify-between mt-1"><span className="text-[var(--muted-foreground)]">Después:</span><span className={`font-bold ${forms.invMovType === 'Salida' && qty > curStock ? 'text-red-400' : 'text-[var(--foreground)]'}`}>{forms.invMovType === 'Entrada' ? curStock + qty : Math.max(0, curStock - qty)} {prod.data.unit}</span></div>)}
+              {forms.invMovType === 'Salida' && qty > curStock && (<div className="text-red-400 text-xs mt-1">⚠ Excede stock disponible en {wh}</div>)}
+            </div>
+          ); })()}
+          <div className="flex gap-2 justify-end mt-5 pt-4 border-t border-[var(--border)]">
+            <button className="px-4 py-2 rounded-lg text-[13px] font-medium cursor-pointer bg-transparent text-[var(--muted-foreground)] border border-[var(--input)] hover:bg-[var(--af-bg3)] hover:text-[var(--foreground)] transition-all" onClick={() => closeModal('invMovement')}>Cancelar</button>
+            <button className="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer bg-emerald-600 text-white border-none hover:bg-emerald-700 transition-colors" onClick={saveInvMovement}>Registrar</button>
+          </div>
+        </div>
+      </div>)}
+
+      {/* Inventory Transfer Modal */}
+      {modals.invTransfer && (<div className="fixed inset-0 bg-black/70 z-[100] flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn" onClick={() => closeModal('invTransfer')}>
+        <div className="bg-[var(--card)] border sm:border border-[var(--input)] sm:rounded-2xl rounded-t-2xl p-5 sm:p-6 w-full sm:w-[480px] sm:max-w-[95vw] max-h-[85dvh] sm:max-h-[85vh] overflow-y-auto animate-slideUp sm:animate-slideIn" onClick={e => e.stopPropagation()}>
+          <div className="text-lg font-semibold mb-5">🔄 Nueva transferencia</div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Producto *</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.invTrProduct || ''} onChange={e => setForms(p => ({ ...p, invTrProduct: e.target.value }))}><option value="">Seleccionar producto</option>{invProducts.map(p => <option key={p.id} value={p.id}>{p.data.name}</option>)}</select></div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Desde (origen) *</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.invTrFrom || ''} onChange={e => setForms(p => ({ ...p, invTrFrom: e.target.value }))}><option value="">Seleccionar</option>{INV_WAREHOUSES.map(w => <option key={w} value={w} disabled={w === forms.invTrTo}>{w}</option>)}</select></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Hasta (destino) *</label><select className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" value={forms.invTrTo || ''} onChange={e => setForms(p => ({ ...p, invTrTo: e.target.value }))}><option value="">Seleccionar</option>{INV_WAREHOUSES.map(w => <option key={w} value={w} disabled={w === forms.invTrFrom}>{w}</option>)}</select></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Cantidad *</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" type="number" placeholder="10" min="1" value={forms.invTrQty || ''} onChange={e => setForms(p => ({ ...p, invTrQty: e.target.value }))} /></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Fecha</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none" type="date" value={forms.invTrDate || new Date().toISOString().split('T')[0]} onChange={e => setForms(p => ({ ...p, invTrDate: e.target.value }))} /></div>
+          </div>
+          <div className="mb-3"><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Notas</label><textarea className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)] resize-none" rows="2" placeholder="Motivo de la transferencia..." value={forms.invTrNotes || ''} onChange={e => setForms(p => ({ ...p, invTrNotes: e.target.value }))} /></div>
+          {/* Live preview */}
+          {forms.invTrProduct && forms.invTrFrom && (() => { const prod = invProducts.find(p => p.id === forms.invTrProduct); if (!prod) return null; const fromStock = getWarehouseStock(prod, forms.invTrFrom); const toStock = getWarehouseStock(prod, forms.invTrTo); const qty = Number(forms.invTrQty || 0); return (
+            <div className={`rounded-lg p-3 mb-3 text-sm border space-y-1 ${qty > fromStock ? 'bg-red-500/10 border-red-500/30' : 'bg-[var(--af-bg3)] border-[var(--border)]'}`}>
+              <div className="flex justify-between"><span className="text-[var(--muted-foreground)]">Stock en {forms.invTrFrom}:</span><span className="font-medium">{fromStock} → {qty > fromStock ? '❌' : fromStock - qty} {prod.data.unit}</span></div>
+              <div className="flex justify-between"><span className="text-[var(--muted-foreground)]">Stock en {forms.invTrTo}:</span><span className="font-medium">{toStock} → {toStock + qty} {prod.data.unit}</span></div>
+              {qty > fromStock && (<div className="text-red-400 text-xs">⚠ Stock insuficiente en origen</div>)}
+            </div>
+          ); })()}
+          <div className="flex gap-2 justify-end mt-5 pt-4 border-t border-[var(--border)]">
+            <button className="px-4 py-2 rounded-lg text-[13px] font-medium cursor-pointer bg-transparent text-[var(--muted-foreground)] border border-[var(--input)] hover:bg-[var(--af-bg3)] hover:text-[var(--foreground)] transition-all" onClick={() => closeModal('invTransfer')}>Cancelar</button>
+            <button className="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer bg-blue-600 text-white border-none hover:bg-blue-700 transition-colors" onClick={saveInvTransfer}>Transferir</button>
+          </div>
+        </div>
+      </div>)}
+
+      {/* Company Modal */}
+      {modals.company && (<div className="fixed inset-0 bg-black/70 z-[100] flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn" onClick={() => closeModal('company')}>
+        <div className="bg-[var(--card)] border sm:border border-[var(--input)] sm:rounded-2xl rounded-t-2xl p-5 sm:p-6 w-full sm:w-[500px] sm:max-w-[95vw] max-h-[85dvh] sm:max-h-[85vh] overflow-y-auto animate-slideUp sm:animate-slideIn" onClick={e => e.stopPropagation()}>
+          <div className="text-lg font-semibold mb-5">{editingId ? 'Editar empresa' : 'Nueva empresa'}</div>
+          <div className="space-y-3">
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Nombre comercial *</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Ej: Arquitectura Pérez SAS" value={forms.compName || ''} onChange={e => setForms(p => ({ ...p, compName: e.target.value }))} /></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Razón legal</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Nombre legal completo" value={forms.compLegal || ''} onChange={e => setForms(p => ({ ...p, compLegal: e.target.value }))} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">NIT</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Ej: 900123456-7" value={forms.compNit || ''} onChange={e => setForms(p => ({ ...p, compNit: e.target.value }))} /></div>
+              <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Teléfono</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="+57 300 1234567" value={forms.compPhone || ''} onChange={e => setForms(p => ({ ...p, compPhone: e.target.value }))} /></div>
+            </div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Correo de contacto</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="contacto@empresa.com" value={forms.compEmail || ''} onChange={e => setForms(p => ({ ...p, compEmail: e.target.value }))} /></div>
+            <div><label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1.5">Dirección</label><input className="w-full bg-[var(--af-bg3)] border border-[var(--input)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]" placeholder="Dirección de la empresa" value={forms.compAddress || ''} onChange={e => setForms(p => ({ ...p, compAddress: e.target.value }))} /></div>
+          </div>
+          <div className="flex gap-3 mt-5">
+            <button className="flex-1 px-4 py-2.5 rounded-lg text-[13px] font-medium cursor-pointer bg-transparent text-[var(--muted-foreground)] border border-[var(--input)] hover:bg-[var(--af-bg3)] hover:text-[var(--foreground)] transition-all" onClick={() => closeModal('company')}>Cancelar</button>
+            <button className="flex-1 px-4 py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer bg-[var(--af-accent)] text-background border-none hover:bg-[var(--af-accent2)] transition-colors" onClick={saveCompany}>{editingId ? 'Guardar cambios' : 'Crear empresa'}</button>
+          </div>
+        </div>
+      </div>)}

@@ -1,0 +1,42 @@
+          {screen === 'budget' && (<div className="animate-fadeIn">
+            <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+              <div className="text-sm text-[var(--muted-foreground)]">{expenses.length} gastos registrados</div>
+              <button className="flex items-center gap-1.5 bg-[var(--af-accent)] text-background px-3.5 py-2 rounded-lg text-[13px] font-semibold cursor-pointer border-none" onClick={() => { setForms(p => ({ ...p, expConcept: '', expProject: '', expAmount: '', expDate: new Date().toISOString().split('T')[0], expCategory: 'Materiales' })); openModal('expense'); }}>
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Registrar gasto
+              </button>
+                <button className="flex items-center gap-1.5 bg-[var(--af-bg3)] text-[var(--foreground)] px-3.5 py-2 rounded-lg text-[13px] font-semibold cursor-pointer border border-[var(--border)] hover:bg-[var(--af-bg4)] transition-colors" onClick={() => {
+                  const q = '"';
+                  const dq = '""';
+                  const headers = ['Concepto', 'Proyecto', 'Categoría', 'Monto', 'Fecha'];
+                  const esc = (v: string) => q + String(v).split(q).join(dq) + q;
+                  const rows = expenses.map(e => [e.data.concept, projects.find(p => p.id === e.data.projectId)?.data?.name || '—', e.data.category, e.data.amount, e.data.date]);
+                  const csv = [headers, ...rows].map(r => r.map(esc).join(',')).join('\n');
+                  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a'); a.href = url; a.download = 'presupuesto_' + new Date().toISOString().split('T')[0] + '.csv'; a.click(); URL.revokeObjectURL(url);
+                  showToast('Presupuesto exportado a CSV');
+                }}>
+                  📥 Exportar CSV
+                </button>
+            </div>
+            {expenses.length === 0 ? <div className="text-center py-16 text-[var(--af-text3)]"><div className="text-4xl mb-3">💰</div><div className="text-[15px] font-medium text-[var(--muted-foreground)]">Sin gastos</div></div> :
+            (() => {
+              const byProject: Record<string, Expense[]> = {};
+              expenses.forEach(e => { const k = e.data.projectId || '_none'; if (!byProject[k]) byProject[k] = []; byProject[k].push(e); });
+              return Object.entries(byProject).map(([pid, exps]) => {
+                const proj = projects.find(p => p.id === pid);
+                const total = exps.reduce((s, e) => s + (Number(e.data.amount) || 0), 0);
+                return (<div key={pid} className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 mb-4">
+                  <div className="flex justify-between items-center mb-3"><div className="text-[15px] font-semibold">{proj?.data.name || 'Sin proyecto'}</div><div className="text-[13px] font-semibold text-[var(--af-accent)]">{fmtCOP(total)} total</div></div>
+                  {exps.map(e => (
+                    <div key={e.id} className="flex items-center gap-3 py-2.5 border-b border-[var(--border)] last:border-0">
+                      <div className="flex-1 min-w-0"><div className="text-sm font-medium">{e.data.concept}</div><div className="text-[11px] text-[var(--af-text3)]">{e.data.category} · {e.data.date}</div></div>
+                      <div className="text-sm font-semibold text-[var(--af-accent)]">{fmtCOP(e.data.amount)}</div>
+                      <button className="text-xs px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 cursor-pointer" onClick={() => deleteExpense(e.id)}>✕</button>
+                    </div>
+                  ))}
+                </div>);
+              });
+            })()}
+          </div>)}
+
