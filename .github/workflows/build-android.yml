@@ -1,0 +1,66 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:  # Permite ejecutar manualmente desde GitHub
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Configurar Java (necesario para Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar dependencias npm
+        run: npm install --legacy-peer-deps
+
+      - name: Crear archivo google-services.json
+        run: echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
+
+      - name: Crear archivo .env.local
+        run: echo "${{ secrets.ENV_LOCAL }}" > .env.local
+
+      - name: Construir la web (Next.js static export)
+        run: npm run build
+
+      - name: Sincronizar Capacitor
+        run: npx cap sync android
+
+      - name: Construir APK de debug
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Construir APK de release (sin firmar)
+        working-directory: android
+        run: ./gradlew assembleRelease
+
+      - name: Subir APK debug como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: archii-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+
+      - name: Subir APK release como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: archii-release-apk
+          path: android/app/build/outputs/apk/release/*.apk

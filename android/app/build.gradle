@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services'   // Firebase Google Services plugin
 
 android {
     namespace "com.archii.app"
@@ -40,15 +41,22 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+
+    // ── Firebase Dependencies ──
+    // Firebase BoM (Bill of Materials) — manages compatible versions automatically
+    implementation platform('com.google.firebase:firebase-bom:33.12.0')
+
+    // Firebase Authentication (native Google/Microsoft/Apple sign-in)
+    implementation 'com.google.firebase:firebase-auth'
+
+    // Firebase Cloud Messaging (push notifications)
+    implementation 'com.google.firebase:firebase-messaging'
+
+    // Firebase Firestore (real-time database)
+    implementation 'com.google.firebase:firebase-firestore'
+
+    // Firebase Storage (file uploads)
+    implementation 'com.google.firebase:firebase-storage'
 }
 
 apply from: 'capacitor.build.gradle'
-
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
-    }
-} catch(Exception e) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
-}
