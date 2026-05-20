@@ -451,27 +451,34 @@ export default function AppProvider({ children }: { children: React.ReactNode })
     const auth = fb.auth();
 
     // Handle redirect results (for signInWithRedirect fallback)
-    auth.getRedirectResult().then((result: any) => {
-      if (result?.credential) {
+    // IMPORTANT: Skip this on native platforms (Capacitor Android/iOS).
+    // The WebView's sessionStorage is partitioned/inaccessible, which causes
+    // the "Unable to process request due to missing initial state" error.
+    // On native, we use @capacitor-firebase/authentication instead.
+    const isNative = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.();
+    if (!isNative) {
+      auth.getRedirectResult().then((result: any) => {
+        if (result?.credential) {
 
-        // Handle Microsoft redirect tokens
-        if (result.credential.accessToken) {
-          setMsAccessToken(result.credential.accessToken);
-          setMsConnected(true);
-          setMsRefreshToken(result.credential.refreshToken || null);
-          setMsTokenExpiry(Date.now() + 55 * 60 * 1000);
-          localStorage.setItem('msAccessToken', result.credential.accessToken);
-          localStorage.setItem('msConnected', 'true');
-          if (result.credential.refreshToken) localStorage.setItem('msRefreshToken', result.credential.refreshToken);
+          // Handle Microsoft redirect tokens
+          if (result.credential.accessToken) {
+            setMsAccessToken(result.credential.accessToken);
+            setMsConnected(true);
+            setMsRefreshToken(result.credential.refreshToken || null);
+            setMsTokenExpiry(Date.now() + 55 * 60 * 1000);
+            localStorage.setItem('msAccessToken', result.credential.accessToken);
+            localStorage.setItem('msConnected', 'true');
+            if (result.credential.refreshToken) localStorage.setItem('msRefreshToken', result.credential.refreshToken);
+          }
         }
-      }
-    }).catch((err: any) => {
-      if (err.code !== 'auth/no-pending-redirect') {
-        console.error('[Archii Auth] Redirect result error:', err.code, err.message);
-        // Show error after a short delay so Toaster is rendered
-        setTimeout(() => showToast(`Error de autenticación: ${err.code || err.message}`, 'error'), 500);
-      }
-    });
+      }).catch((err: any) => {
+        if (err.code !== 'auth/no-pending-redirect') {
+          console.error('[Archii Auth] Redirect result error:', err.code, err.message);
+          // Show error after a short delay so Toaster is rendered
+          setTimeout(() => showToast(`Error de autenticación: ${err.code || err.message}`, 'error'), 500);
+        }
+      });
+    }
 
     const unsubscribe = auth.onAuthStateChanged(async (user: any) => {
       try {
