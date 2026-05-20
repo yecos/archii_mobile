@@ -51,6 +51,24 @@ jobs:
       - name: Sincronizar Capacitor
         run: npx cap sync android
 
+      - name: Generar keystore de debug consistente
+        run: |
+          # Generate a deterministic debug keystore so the SHA-1 is always the same
+          # This SHA-1 must be registered in Firebase Console for Google Sign-In
+          mkdir -p ~/.android
+          keytool -genkey -v \
+            -keystore ~/.android/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US" 2>/dev/null || true
+          echo ""
+          echo "=== SHA-1 FINGERPRINT (register this in Firebase Console) ==="
+          keytool -list -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey 2>&1 | grep SHA1
+
       - name: Construir APK de debug
         working-directory: android
         run: ./gradlew assembleDebug

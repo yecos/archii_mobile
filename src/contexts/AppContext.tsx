@@ -1460,6 +1460,42 @@ export default function AppProvider({ children }: { children: React.ReactNode })
   };
 
   const doGoogleLogin = async () => {
+    // ── NATIVE (Capacitor) PATH ──
+    // On Android/iOS, signInWithPopup doesn't work inside a WebView.
+    // Use @capacitor-firebase/authentication which invokes the native
+    // Google Sign-In SDK through the Firebase Android/iOS SDK.
+    if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.()) {
+      try {
+        const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+        const result = await FirebaseAuthentication.signInWithGoogle();
+
+        if (result?.user) {
+          // The Capacitor plugin automatically signs in on the native side.
+          // We also need to sign in on the web SDK so the rest of the app
+          // (Firestore, Storage, etc.) works through the compat SDK.
+          if (result.credential?.idToken) {
+            try {
+              const fb = getFirebase();
+              const credential = (fb.auth as any).GoogleAuthProvider.credential(
+                result.credential.idToken,
+                result.credential.accessToken || undefined
+              );
+              await fb.auth().signInWithCredential(credential);
+            } catch (credErr: any) {
+              console.warn('[Archii Auth] Web credential sign-in failed (native sign-in still active):', credErr.message);
+            }
+          }
+          return; // Success
+        }
+      } catch (nativeErr: any) {
+        console.error('[Archii Auth] Native Google sign-in failed:', nativeErr.message);
+        showToast(`Error Google (nativo): ${nativeErr.message || 'Verifica SHA-1 en Firebase Console'}`, 'error');
+        return;
+      }
+    }
+
+    // ── WEB PATH ──
+    // Standard popup-based Google Sign-In for browser/PWA
     try {
       const fb = getFirebase();
       const projectId = fb.apps?.[0]?.options?.projectId || 'unknown';
