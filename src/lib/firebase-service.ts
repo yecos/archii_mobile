@@ -42,6 +42,7 @@ interface AuthInstance {
   createUserWithEmailAndPassword(email: string, pass: string): Promise<any>;
   signInWithPopup(provider: any): Promise<any>;
   signInWithRedirect(provider: any): Promise<any>;
+  signInWithCredential(credential: any): Promise<any>;
   getRedirectResult(): Promise<any>;
   signInAnonymously(): Promise<any>;
 }
