@@ -8,7 +8,48 @@ on:
   workflow_dispatch:  # Permite ejecutar manualmente desde GitHub
 
 jobs:
+  # ============================================================
+  # Job 1: Calidad de código (lint, types, seguridad)
+  # ============================================================
+  code-quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias npm
+        run: npm install --legacy-peer-deps
+
+      - name: Verificar TypeScript
+        run: npx tsc --noEmit --pretty
+
+      - name: Ejecutar ESLint
+        run: npx next lint
+        continue-on-error: true  # No bloquea el build por warnings de lint
+
+      - name: Auditoria de seguridad npm
+        run: npm audit --audit-level=high
+        continue-on-error: true  # No bloquea el build por vulnerabilidades
+
+      - name: Verificar secrets en el codigo
+        run: |
+          if git diff HEAD~1 --name-only 2>/dev/null | xargs grep -l -E '(ghp_|AIza|sk-|xoxb-|PK[0-9])' 2>/dev/null; then
+            echo "::warning::Posibles secrets detectados en el diff"
+          fi
+        continue-on-error: true
+
+  # ============================================================
+  # Job 2: Build del APK (depende de que pase code-quality)
+  # ============================================================
   build:
+    needs: code-quality
     runs-on: ubuntu-latest
 
     steps:

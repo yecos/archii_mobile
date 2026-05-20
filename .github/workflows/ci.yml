@@ -1,10 +1,11 @@
-name: CI
+name: CI (Legacy - Disabled)
+
+# Este workflow ha sido desactivado.
+# Sus checks (lint, typescript, security) ahora estan integrados en build-android.yml
+# Solo se puede ejecutar manualmente si se necesita.
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:  # Solo ejecucion manual, sin triggers automaticos
 
 jobs:
   lint-and-build:
