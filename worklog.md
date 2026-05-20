@@ -756,7 +756,45 @@ Work Log:
   - indexDocument(): chunking + embeddings + almacenamiento en Firestore (document_chunks)
   - deleteDocumentChunks(): limpieza de chunks por sourceDocId
   - searchDocuments(): busqueda semantica con aislamiento estricto por tenantId
-  - askWithRAG(): busca contexto + genera respuesta con IA + cita fuentes
+  - askWithRAG(): busc
+
+---
+Task ID: 1
+Agent: Super Z (Main)
+Task: Despliegue de app móvil Android con Capacitor (archii_mobile) + fix Google Sign-In
+
+Protocolo leido: LEE_PRIMERO.txt + INSTRUCTIVO_BITACORA.txt
+
+Work Log:
+- Clonado repo archii_mobile a /home/z/my-project/repo_temp
+- Analizada estructura: Next.js 16 + Capacitor 7 + Firebase + 10 plugins nativos
+- Identificado bug critico en scripts/build-mobile.sh: renombraba src/app/api a src/app/_api dentro de src/app/, causando errores TS porque los imports @/app/api/_lib/counter ya no encontraban la ruta
+- Fix: cambiar de rename a move fuera del proyecto (mv src/app/api /tmp/archii_api_backup_build)
+- Creado src/lib/api-config.ts: bridge para que la app móvil llame a las API routes del backend PWA en Vercel (https://archii-theta.vercel.app)
+- Configurado .env.local con credenciales Firebase del proyecto archiflow-prod-2026
+- Corregido android/app/build.gradle: plugin google-services explicito + Firebase BoM 33.12.0 + dependencias (Auth, FCM, Firestore, Storage)
+- Creado .github/workflows/build-android.yml para CI/CD automatizado
+- Configurados GitHub Secrets: GOOGLE_SERVICES_JSON y ENV_LOCAL (encriptados)
+- 3 iteraciones de fixes en CI: (1) API routes en static export -> usar build-mobile.sh, (2) Java 17 -> Java 21 por Capacitor 7, (3) signInWithCredential faltante en tipo AuthInstance
+- Build #4: primer APK exitoso (12.5 MB)
+- Fix Google Sign-In en Android: doGoogleLogin usaba signInWithPopup que no funciona en WebView
+  - Agregado path nativo con @capacitor-firebase/authentication signInWithGoogle()
+  - Bridge de credenciales al web SDK con signInWithCredential()
+- Fix "missing initial state": getRedirectResult() falla en Capacitor por sessionStorage particionado
+  - Agregado guard: skip getRedirectResult() en plataformas nativas
+- Keystore debug consistente en CI con SHA-1: 16:24:3D:73:D8:21:26:C6:F3:A2:96:62:0E:D3:0A:2C:E3:ED:73:D8
+- Build #7 exitoso con todas las correcciones
+
+Commits: 66f90a7, e41115c, d6eb617, ec129a0, c8fc97c, 33b9a4b
+
+Stage Summary:
+- App Android compila via GitHub Actions y genera APK descargable
+- Google Sign-In corregido para usar SDK nativo en Android
+- Error "missing initial state" corregido saltando getRedirectResult() en nativo
+- SHA-1 fingerprint generado: 16:24:3D:73:D8:21:26:C6:F3:A2:96:62:0E:D3:0A:2C:E3:ED:73:D8
+- PENDIENTE: Usuario debe agregar SHA-1 en Firebase Console > Project Settings > Android App
+- PENDIENTE: Descargar nuevo google-services.json de Firebase y actualizar secrets
+- Archivos modificados: AppContext.tsx, firebase-service.ts, build-mobile.sh, api-config.ts, build-android.yml, android/app/build.gradle, android/build.gradlea contexto + genera respuesta con IA + cita fuentes
   - reindexCollection(): re-indexa toda una coleccion para un tenant
   - Creado /api/ai/rag/route.ts: search, ask, index, delete, reindex
   - Gated por feature flag 'rag_search'
