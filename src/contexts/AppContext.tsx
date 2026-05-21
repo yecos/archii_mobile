@@ -1495,8 +1495,10 @@ export default function AppProvider({ children }: { children: React.ReactNode })
           return; // Success
         }
       } catch (nativeErr: any) {
-        console.error('[Archii Auth] Native Google sign-in failed:', nativeErr.message);
-        showToast(`Error Google (nativo): ${nativeErr.message || 'Verifica SHA-1 en Firebase Console'}`, 'error');
+        console.error('[Archii Auth] Native Google sign-in failed:', nativeErr);
+        const errDetail = nativeErr?.message || nativeErr?.code || String(nativeErr);
+        const errStack = nativeErr?.stack ? ` | stack: ${nativeErr.stack.substring(0, 200)}` : '';
+        showToast(`Error Google (nativo): ${errDetail}${errStack}`, 'error');
         return;
       }
     }

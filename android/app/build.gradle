@@ -57,6 +57,15 @@ dependencies {
 
     // Firebase Storage (file uploads)
     implementation 'com.google.firebase:firebase-storage'
+
+    // ── Google Sign-In Dependencies ──
+    // These are required at RUNTIME by @capacitor-firebase/authentication
+    // but the plugin only includes them as "compileOnly" by default.
+    // Without these, Google Sign-In crashes with ClassNotFoundException.
+    implementation 'com.google.android.gms:play-services-auth:20.7.0'
+    implementation 'androidx.credentials:credentials:1.2.0-rc01'
+    implementation 'androidx.credentials:credentials-play-services-auth:1.2.0-rc01'
+    implementation 'com.google.android.libraries.identity.googleid:googleid:1.1.0'
 }
 
 apply from: 'capacitor.build.gradle'
