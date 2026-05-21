@@ -236,6 +236,14 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
     }
 
+    // Agenda Week Data (notas semanales por tenant)
+    match /agendaWeekData/{weekDocId} {
+      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
+      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+    }
+
     // RFIs (Request for Information)
     match /rfis/{rfiId} {
       allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
