@@ -2,163 +2,318 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ===== HELPERS =====
+    // ========================================================================
+    // HELPER FUNCTIONS
+    // ========================================================================
 
-    // Check if user is authenticated
-    function isAuthenticated() {
+    /** Check if user is signed in (authenticated) */
+    function isSignedIn() {
       return request.auth != null;
     }
 
-    // Get the members array of a tenant (cached per evaluation)
-    function getTenantMembers(tenantId) {
-      return get(/databases/$(database)/documents/tenants/$(tenantId)).data.members;
-    }
-
-    // Get the superAdmins array of a tenant (cached per evaluation)
-    function getTenantSuperAdmins(tenantId) {
-      return get(/databases/$(database)/documents/tenants/$(tenantId)).data.superAdmins;
-    }
-
-    // Check if the authenticated user is a member or super admin of a specific tenant
-    function isMemberOfTenant(tenantId) {
-      return tenantId != null
+    /** Check if user's auth token tenantId matches the given tenantId */
+    function isTenantMember(tenantId) {
+      return isSignedIn()
+        && tenantId != null
         && tenantId != ''
-        && isAuthenticated()
-        && (
-          request.auth.uid in getTenantMembers(tenantId)
-          || request.auth.uid in getTenantSuperAdmins(tenantId)
-        );
+        && request.auth.token.tenantId == tenantId;
     }
 
-    // Check if user is the creator (Super Admin) of a tenant
-    function isTenantCreator(tenantId) {
-      return tenantId != null
-        && isAuthenticated()
-        && resource.data.createdBy == request.auth.uid;
-    }
+    // ========================================================================
+    // USERS — global, not tenant-scoped
+    // ========================================================================
 
-    // ===== USERS COLLECTION (global, not tenant-scoped) =====
-    // All authenticated users can read all users (needed for team member lists)
-    // Users can only write their own document
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update, delete: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 
-    // ===== TENANTS COLLECTION =====
-    // Anyone authenticated can create a new tenant
-    // Only members can read/update a tenant
-    // Only the creator can delete a tenant
-    match /tenants/{tenantId} {
-      allow create: if isAuthenticated();
-      allow read: if isAuthenticated() && isMemberOfTenant(tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(tenantId);
-      allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
+    // ========================================================================
+    // TENANTS
+    // ========================================================================
 
-      // Collaboration subcollections — Admin SDK only (accessed via /api/collab)
-      match /collab_{subcollection}/{docId} {
-        allow read, write: if false; // Server/Admin SDK only
+    match /tenants/{tenantId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn() && isTenantMember(tenantId);
+      allow update: if isSignedIn() && isTenantMember(tenantId);
+      allow delete: if isSignedIn() && isTenantMember(tenantId);
+
+      // Tenant subcollection: agendaWeekData
+      match /agendaWeekData/{weekId} {
+        allow read: if isSignedIn() && isTenantMember(tenantId);
+        allow create: if isSignedIn() && isTenantMember(tenantId);
+        allow update: if isSignedIn() && isTenantMember(tenantId);
+        allow delete: if isSignedIn() && isTenantMember(tenantId);
+      }
+
+      // Tenant subcollection: collab_documents (Admin SDK only for writes)
+      match /collab_documents/{docId} {
+        allow read: if isSignedIn() && isTenantMember(tenantId);
+        allow create, update, delete: if false;
+      }
+
+      // Tenant subcollection: collab_presence (Admin SDK only for writes)
+      match /collab_presence/{presenceId} {
+        allow read: if isSignedIn() && isTenantMember(tenantId);
+        allow create, update, delete: if false;
+      }
+
+      // Tenant subcollection: collab_comments (Admin SDK only for writes)
+      match /collab_comments/{commentId} {
+        allow read: if isSignedIn() && isTenantMember(tenantId);
+        allow create, update, delete: if false;
       }
     }
 
-    // ===== TENANT-SCOPED TOP-LEVEL COLLECTIONS =====
-    // These collections have tenantId in each document.
-    // Only tenant members can CRUD documents belonging to their tenant.
+    // ========================================================================
+    // TOP-LEVEL TENANT-SCOPED COLLECTIONS
+    // Pattern: isSignedIn() AND doc.tenantId matches auth token tenantId
+    // ========================================================================
 
     // Projects
     match /projects/{projectId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
 
-      // Project subcollections (messages, workPhases, files, approvals, etc.)
-      // These docs have tenantId field set by the client
-      match /{subcollection}/{subdocId} {
-        allow read: if isAuthenticated() && isMemberOfTenant(
-          // For existing docs, check tenantId field
-          (resource.data.tenantId != null && resource.data.tenantId != '')
-            ? resource.data.tenantId
-            // Fallback: check parent project's tenantId
+      // Project subcollections — all inherit parent project's tenantId
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
             : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
         );
-        allow create: if isAuthenticated() && (
-          // If doc has tenantId, validate it
-          (request.resource.data.tenantId != null && request.resource.data.tenantId != '' && isMemberOfTenant(request.resource.data.tenantId))
-          ||
-          // Fallback: check parent project's tenantId
-          isMemberOfTenant(get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId)
-        );
-        allow update: if isAuthenticated() && isMemberOfTenant(
-          (resource.data.tenantId != null && resource.data.tenantId != '')
-            ? resource.data.tenantId
+        allow create: if isSignedIn() && isTenantMember(
+          request.resource.data.tenantId != null && request.resource.data.tenantId != ''
+            ? request.resource.data.tenantId
             : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
         );
-        allow delete: if isAuthenticated() && isMemberOfTenant(
-          (resource.data.tenantId != null && resource.data.tenantId != '')
-            ? resource.data.tenantId
+        allow update: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
             : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow delete: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+      }
+
+      match /files/{fileId} {
+        allow read: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow create: if isSignedIn() && isTenantMember(
+          request.resource.data.tenantId != null && request.resource.data.tenantId != ''
+            ? request.resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow update: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow delete: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+      }
+
+      match /workPhases/{phaseId} {
+        allow read: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow create: if isSignedIn() && isTenantMember(
+          request.resource.data.tenantId != null && request.resource.data.tenantId != ''
+            ? request.resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow update: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow delete: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+      }
+
+      match /approvals/{approvalId} {
+        allow read: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow create: if isSignedIn() && isTenantMember(
+          request.resource.data.tenantId != null && request.resource.data.tenantId != ''
+            ? request.resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow update: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow delete: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+      }
+
+      match /dailyLogs/{logId} {
+        allow read: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow create: if isSignedIn() && isTenantMember(
+          request.resource.data.tenantId != null && request.resource.data.tenantId != ''
+            ? request.resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow update: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow delete: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+      }
+
+      match /fieldNotes/{noteId} {
+        allow read: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow create: if isSignedIn() && isTenantMember(
+          request.resource.data.tenantId != null && request.resource.data.tenantId != ''
+            ? request.resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow update: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow delete: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+      }
+
+      match /dailyEntries/{entryId} {
+        allow read: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow create: if isSignedIn() && isTenantMember(
+          request.resource.data.tenantId != null && request.resource.data.tenantId != ''
+            ? request.resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow update: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow delete: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+      }
+
+      match /dailyReports/{reportId} {
+        allow read: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow create: if isSignedIn() && isTenantMember(
+          request.resource.data.tenantId != null && request.resource.data.tenantId != ''
+            ? request.resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow update: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow delete: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
+            : get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+      }
+
+      match /weatherCache/{weatherId} {
+        allow read: if isSignedIn() && isTenantMember(
+          get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow create: if isSignedIn() && isTenantMember(
+          get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow update: if isSignedIn() && isTenantMember(
+          get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
+        );
+        allow delete: if isSignedIn() && isTenantMember(
+          get(/databases/$(database)/documents/projects/$(projectId)).data.tenantId
         );
       }
     }
 
     // Tasks
     match /tasks/{taskId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // Expenses
     match /expenses/{expenseId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // Suppliers
     match /suppliers/{supplierId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // Companies
     match /companies/{companyId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // Meetings
     match /meetings/{meetingId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // General Messages (chat)
     match /generalMessages/{messageId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update, delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
 
       // Reactions subcollection
       match /reactions/{reactionId} {
-        allow read: if isAuthenticated() && isMemberOfTenant(
+        allow read: if isSignedIn() && isTenantMember(
           get(/databases/$(database)/documents/generalMessages/$(messageId)).data.tenantId
         );
-        allow create: if isAuthenticated() && isMemberOfTenant(
-          request.resource.data.tenantId != null ? request.resource.data.tenantId
+        allow create: if isSignedIn() && isTenantMember(
+          request.resource.data.tenantId != null && request.resource.data.tenantId != ''
+            ? request.resource.data.tenantId
             : get(/databases/$(database)/documents/generalMessages/$(messageId)).data.tenantId
         );
-        allow delete: if isAuthenticated() && isMemberOfTenant(
+        allow delete: if isSignedIn() && isTenantMember(
           get(/databases/$(database)/documents/generalMessages/$(messageId)).data.tenantId
         );
       }
@@ -166,207 +321,255 @@ service cloud.firestore {
 
     // Gallery Photos
     match /galleryPhotos/{photoId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // Inventory Products
     match /invProducts/{productId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // Inventory Categories
     match /invCategories/{catId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // Inventory Movements
     match /invMovements/{movId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // Inventory Transfers
     match /invTransfers/{transId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // Time Entries
     match /timeEntries/{entryId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // Invoices
     match /invoices/{invoiceId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // Comments
     match /comments/{commentId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
-    // Field Notes (Minutas de Obra)
+    // Field Notes (top-level)
     match /fieldNotes/{noteId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
+    }
+
+    // Agenda Week Data (top-level — also exists as tenant subcollection)
+    match /agendaWeekData/{weekDocId} {
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // RFIs (Request for Information)
     match /rfis/{rfiId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // Submittals
     match /submittals/{subId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // Punch Items
     match /punchItems/{punchId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
+    }
+
+    // Catalogs
+    match /catalogs/{catalogId} {
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
+    }
+
+    // Activity Log
+    match /activityLog/{logId} {
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
+    }
+
+    // Notifications
+    match /notifications/{notifId} {
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
     // Kanban Boards (tenant-scoped)
     match /kanbanBoards/{boardId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
 
       // Columns subcollection
       match /columns/{columnId} {
-        allow read: if isAuthenticated() && isMemberOfTenant(
-          (resource.data.tenantId != null) ? resource.data.tenantId
+        allow read: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
             : get(/databases/$(database)/documents/kanbanBoards/$(boardId)).data.tenantId
         );
-        allow create: if isAuthenticated() && (
-          (request.resource.data.tenantId != null && isMemberOfTenant(request.resource.data.tenantId))
-          || isMemberOfTenant(get(/databases/$(database)/documents/kanbanBoards/$(boardId)).data.tenantId)
+        allow create: if isSignedIn() && (
+          (request.resource.data.tenantId != null && isTenantMember(request.resource.data.tenantId))
+          || isTenantMember(get(/databases/$(database)/documents/kanbanBoards/$(boardId)).data.tenantId)
         );
-        allow update: if isAuthenticated() && isMemberOfTenant(
-          (resource.data.tenantId != null) ? resource.data.tenantId
+        allow update: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
             : get(/databases/$(database)/documents/kanbanBoards/$(boardId)).data.tenantId
         );
-        allow delete: if isAuthenticated() && isMemberOfTenant(
-          (resource.data.tenantId != null) ? resource.data.tenantId
+        allow delete: if isSignedIn() && isTenantMember(
+          resource.data.tenantId != null ? resource.data.tenantId
             : get(/databases/$(database)/documents/kanbanBoards/$(boardId)).data.tenantId
         );
       }
     }
 
-    // Direct Messages (DMs between users) - accessible by both participants
+    // Direct Messages (DMs between users) — accessible by both participants
     // DMs are identified by dm_{uid1}_{uid2} where uid1 < uid2
     match /directMessages/{dmId} {
-      // Only participants can read/create their DM thread
-      allow read: if isAuthenticated()
+      allow read: if isSignedIn()
         && (request.auth.uid == dmId.split('_')[1] || request.auth.uid == dmId.split('_')[2]);
 
       match /messages/{msgId} {
-        allow read: if isAuthenticated()
+        allow read: if isSignedIn()
           && (request.auth.uid == dmId.split('_')[1] || request.auth.uid == dmId.split('_')[2]);
-        allow create: if isAuthenticated()
+        allow create: if isSignedIn()
           && (request.auth.uid == dmId.split('_')[1] || request.auth.uid == dmId.split('_')[2]);
-        allow update, delete: if isAuthenticated()
+        allow update, delete: if isSignedIn()
           && (request.auth.uid == dmId.split('_')[1] || request.auth.uid == dmId.split('_')[2]);
       }
     }
 
     // WhatsApp Links (tenant-scoped)
     match /whatsappLinks/{linkId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update, delete: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow delete: if isSignedIn() && isTenantMember(resource.data.tenantId);
     }
 
-    // WhatsApp OTP codes — Admin SDK only (server manages creation and verification)
+    // WhatsApp OTP codes — Admin SDK only
     match /whatsappOtp/{otpId} {
-      allow read, write: if false; // Server/Admin SDK only
+      allow read, write: if false;
     }
 
-    // OneDrive files cache (server-managed, accessed via Admin SDK in API routes)
-    // SECURITY: Tenant-scoped reads to prevent cross-tenant metadata leakage
+    // Integrations — Admin SDK only
+    match /integrations/{integrationId} {
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create, update, delete: if false;
+    }
+
+    // Integration Logs — Admin SDK only
+    match /integration_logs/{logId} {
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create, update, delete: if false;
+    }
+
+    // OneDrive files cache — server-managed, client can read
     match /onedrive_files/{fileId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create, update, delete: if false; // Server/Admin SDK only
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create, update, delete: if false;
     }
 
-    // OneDrive folders cache (server-managed)
+    // OneDrive folders cache — server-managed, client can read
     match /onedrive_folders/{folderId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create, update, delete: if false; // Server/Admin SDK only
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create, update, delete: if false;
     }
 
-    // ===== SYSTEM LOGGING COLLECTIONS (tenant-scoped) =====
+    // ========================================================================
+    // SYSTEM LOGGING COLLECTIONS
+    // ========================================================================
 
-    // Audit Logs — only Admin SDK / server can create; members can read
+    // Audit Logs — server create only; members can read own tenant
     match /audit_logs/{logId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if false; // Server/Admin SDK only
-      allow update, delete: if false; // Immutable
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if false;
+      allow update, delete: if false;
     }
 
-    // Error Reports — only Admin SDK / server can create; members can read own tenant's
+    // Error Reports — server create only; members can read own tenant
     match /error_reports/{reportId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if false; // Server/Admin SDK only
-      allow update, delete: if false; // Immutable
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if false;
+      allow update, delete: if false;
     }
 
-    // Telemetry Events — only Admin SDK / server can create; no client read
+    // Telemetry Events — server only, no client access
     match /telemetry_events/{eventId} {
-      allow read: if false; // Server/Admin SDK only
-      allow create: if false; // Server/Admin SDK only
-      allow update, delete: if false; // Server/Admin SDK only
+      allow read, write: if false;
     }
 
-    // Beta Feedback — members can create/read own tenant's; server can update status
+    // Beta Feedback — members can create/read; server manages status
     match /beta_feedback/{feedbackId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if isAuthenticated() && isMemberOfTenant(request.resource.data.tenantId);
-      allow update: if false; // Server/Admin SDK only (status changes)
-      allow delete: if false; // Preserve feedback history
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if isSignedIn() && isTenantMember(request.resource.data.tenantId);
+      allow update: if false;
+      allow delete: if false;
     }
 
     // API Keys — server-managed, users can read their own tenant's keys
     match /apiKeys/{keyId} {
-      allow read: if isAuthenticated() && isMemberOfTenant(resource.data.tenantId);
-      allow create: if false; // Server/Admin SDK only
-      allow update: if false; // Server/Admin SDK only (revoke)
-      allow delete: if false; // Server/Admin SDK only
+      allow read: if isSignedIn() && isTenantMember(resource.data.tenantId);
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // Document Chunks (RAG) — server-managed, no client access
+    match /document_chunks/{chunkId} {
+      allow read, write: if false;
     }
 
   }
