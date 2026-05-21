@@ -86,23 +86,27 @@ jobs:
       - name: Sincronizar Capacitor
         run: npx cap sync android
 
-      - name: Generar keystore de debug consistente
+      - name: Restaurar keystore de debug (SHA-1 fijo para Firebase)
         run: |
-          # Generate a deterministic debug keystore so the SHA-1 is always the same
-          # This SHA-1 must be registered in Firebase Console for Google Sign-In
+          # Restore the debug keystore from GitHub Secrets.
+          # This ensures the SHA-1 fingerprint matches what's registered in Firebase Console.
+          # SHA-1: C5:9D:1F:F2:18:28:0B:88:C2:47:28:37:DF:00:10:14:14:73:B8:36
           mkdir -p ~/.android
-          keytool -genkey -v \
-            -keystore ~/.android/debug.keystore \
-            -storepass android \
-            -alias androiddebugkey \
-            -keypass android \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Android Debug,O=Android,C=US" 2>/dev/null || true
+          echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/debug.keystore
           echo ""
-          echo "=== SHA-1 FINGERPRINT (register this in Firebase Console) ==="
-          keytool -list -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey 2>&1 | grep SHA1
+          echo "=== SHA-1 FINGERPRINT (must match Firebase Console) ==="
+          keytool -list -v -keystore ~/.android/debug.keystore -storepass ${{ secrets.DEBUG_KEYSTORE_PASSWORD }} -alias ${{ secrets.DEBUG_KEYSTORE_ALIAS }} 2>&1 | grep SHA1
+
+      - name: Configurar signing para Gradle
+        working-directory: android
+        run: |
+          # Configure debug signing with our fixed keystore
+          cat >> app/signing.properties << EOF
+          storeFile=$HOME/.android/debug.keystore
+          storePassword=${{ secrets.DEBUG_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.DEBUG_KEYSTORE_ALIAS }}
+          keyPassword=${{ secrets.DEBUG_KEYSTORE_KEY_PASSWORD }}
+          EOF
 
       - name: Construir APK de debug
         working-directory: android
