@@ -75,16 +75,10 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Crear archivo google-services.json
-        run: |
-          cat > android/app/google-services.json << 'GOOGLE_SERVICES_EOF'
-          ${{ secrets.GOOGLE_SERVICES_JSON }}
-          GOOGLE_SERVICES_EOF
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
 
       - name: Crear archivo .env.local
-        run: |
-          cat > .env.local << 'ENV_LOCAL_EOF'
-          ${{ secrets.ENV_LOCAL }}
-          ENV_LOCAL_EOF
+        run: echo '${{ secrets.ENV_LOCAL }}' > .env.local
 
       - name: Construir la web (Next.js static export via build-mobile.sh)
         run: bash scripts/build-mobile.sh

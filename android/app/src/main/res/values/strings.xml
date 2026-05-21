@@ -4,4 +4,6 @@
     <string name="title_activity_main">Archii</string>
     <string name="package_name">com.archii.app</string>
     <string name="custom_url_scheme">com.archii.app</string>
+    <!-- Web OAuth 2.0 Client ID from Firebase Console (required for Google Sign-In native) -->
+    <string name="default_web_client_id">1090724963650-oi5bbrqnus5of6uvoupelemeihqffpp0.apps.googleusercontent.com</string>
 </resources>
