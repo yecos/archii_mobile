@@ -748,3 +748,4 @@ export const SCREEN_TITLES: Record<string, string> = {
   submittals: 'Submittals',
   punchList: 'Punch List',
 };
+// Auto-sync test - Thu May 21 18:06:21 UTC 2026
