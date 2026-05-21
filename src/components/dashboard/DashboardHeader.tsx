@@ -50,7 +50,7 @@ export default function DashboardHeader({
                 <button className="w-9 h-9 rounded-xl bg-[var(--af-bg4)] border border-[var(--border)] flex items-center justify-center cursor-pointer hover:bg-[var(--af-bg3)] transition-colors" onClick={() => navigateTo('chat')}>
                   <span className="text-sm">🔔</span>
                 </button>
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>
               </div>
             )}
             <button className="flex items-center gap-1 text-[10px] text-[var(--muted-foreground)] cursor-pointer hover:text-[var(--af-accent)] transition-colors px-2 py-1.5 rounded-lg bg-[var(--af-bg4)] border border-[var(--border)]" onClick={() => { try { exportGeneralReportPDF({ projects, tasks, expenses, invoices, teamUsers, timeEntries }); showToast('Reporte PDF descargado'); } catch { showToast('Error', 'error'); } }}>

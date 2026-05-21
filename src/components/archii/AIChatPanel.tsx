@@ -445,7 +445,7 @@ export default function AIChatPanel({ isOpen, onClose }: AIChatPanelProps) {
             <div>
               <div className="flex items-center gap-1.5">
                 <h3 className="text-sm font-bold text-foreground">Super IA</h3>
-                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--af-accent)]/15 text-[var(--af-accent)] font-semibold">AGENT</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--af-accent)]/15 text-[var(--af-accent)] font-semibold">AGENT</span>
               </div>
               <p className="text-[11px] text-muted-foreground">Gestiono toda tu app: proyectos, inventario, finanzas y más</p>
             </div>
@@ -502,7 +502,7 @@ export default function AIChatPanel({ isOpen, onClose }: AIChatPanelProps) {
                     {msg.role === 'user' && msg.images && msg.images.length > 0 && (
                       <div className="flex gap-1.5 flex-wrap mb-1.5">
                         {msg.images.map((img, i) => (
-                          <img key={i} src={img.url} alt="" className="max-w-[200px] max-h-[150px] rounded-lg object-cover" />
+                          <img key={i} src={img.url} alt="Imagen generada por IA" className="max-w-[200px] max-h-[150px] rounded-lg object-cover" />
                         ))}
                       </div>
                     )}
@@ -561,7 +561,7 @@ export default function AIChatPanel({ isOpen, onClose }: AIChatPanelProps) {
             <div className="flex gap-2 overflow-x-auto pb-2 px-1" style={{ scrollbarWidth: 'none' }}>
               {pendingImages.map((img, i) => (
                 <div key={i} className="relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-[var(--af-bg4)]">
-                  <img src={img.url} alt="" className="w-full h-full object-cover" />
+                  <img src={img.url} alt="Imagen adjunta" className="w-full h-full object-cover" />
                   <button
                     className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 text-white rounded-full text-[10px] flex items-center justify-center leading-none cursor-pointer border-none"
                     onClick={() => setPendingImages(prev => prev.filter((_, idx) => idx !== i))}

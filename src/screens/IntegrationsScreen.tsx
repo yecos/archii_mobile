@@ -382,7 +382,7 @@ export default function IntegrationsScreen() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[14px] font-semibold">{prov.name}</span>
-                        <span className={`text-[9px] px-2 py-0.5 rounded-full border ${statusColor(inst.status)}`}>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusColor(inst.status)}`}>
                           {statusLabel(inst.status)}
                         </span>
                       </div>
@@ -519,7 +519,7 @@ export default function IntegrationsScreen() {
                         <div className="text-[14px] font-semibold flex items-center gap-2">
                           {provider.name}
                           {isInstalled && (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
                               Conectado
                             </span>
                           )}
@@ -553,13 +553,13 @@ export default function IntegrationsScreen() {
                     {provider.eventTypes.slice(0, 4).map((evt) => (
                       <span
                         key={evt}
-                        className="text-[9px] px-2 py-0.5 rounded-full bg-[var(--af-bg3)] text-[var(--af-text3)]"
+                        className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--af-bg3)] text-[var(--af-text3)]"
                       >
                         {evt}
                       </span>
                     ))}
                     {provider.eventTypes.length > 4 && (
-                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-[var(--af-bg3)] text-[var(--af-text3)]">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--af-bg3)] text-[var(--af-text3)]">
                         +{provider.eventTypes.length - 4}
                       </span>
                     )}

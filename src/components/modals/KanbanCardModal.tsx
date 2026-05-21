@@ -220,7 +220,7 @@ export default function KanbanCardModal({
           <div className="max-h-[200px] overflow-y-auto space-y-2" style={{ scrollbarWidth: 'thin' }}>
             {comments.map((comment: any) => (
               <div key={comment.id} className="flex items-start gap-2.5 p-2.5 bg-[var(--af-bg3)] rounded-lg">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold border flex-shrink-0 ${avatarColor(comment.userId || comment.data?.userId)}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold border flex-shrink-0 ${avatarColor(comment.userId || comment.data?.userId)}`}>
                   {getInitials(comment.userName || comment.data?.userName || '?')}
                 </div>
                 <div className="flex-1 min-w-0">

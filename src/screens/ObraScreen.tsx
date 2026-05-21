@@ -238,7 +238,7 @@ export default function ObraScreen() {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--af-bg4)" vertical={false} />
                     <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 9, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
-                    <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(200,169,110,0.06)' }} />
+                    <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(212,184,122,0.06)' }} />
                     <Bar dataKey="personal" name="Personal" fill="#6366f1" radius={[3, 3, 0, 0]} barSize={12} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -255,7 +255,7 @@ export default function ObraScreen() {
                     <XAxis type="number" tick={{ fontSize: 9, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 8, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} width={70} />
                     <Tooltip content={<ChartTooltip />} />
-                    <Bar dataKey="value" name="Veces" fill="#c8a96e" radius={[0, 3, 3, 0]} barSize={10} />
+                    <Bar dataKey="value" name="Veces" fill="#d4b87a" radius={[0, 3, 3, 0]} barSize={10} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : <div className="text-center py-6 text-[var(--af-text3)] text-sm">Sin datos</div>}

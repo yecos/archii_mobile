@@ -2,14 +2,19 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 
 /**
  * CenterModal — Modal centrado en pantalla.
  * Uses Radix Dialog primitives directly (not the composite DialogContent)
  * to avoid duplicate portals/overlays that cause screen freeze on close.
  * Animate-in/out via Framer Motion for smooth spring-based transitions.
+ * Respects prefers-reduced-motion: skips animations when enabled.
  */
 export default function CenterModal({ open, onClose, children, maxWidth = 480 }: { open: boolean; onClose: () => void; children: React.ReactNode; maxWidth?: number }) {
+  const reduced = useMotionPreference();
+  const instant = { duration: 0 };
+
   return (
     <DialogPrimitive.Root open={open} onOpenChange={(o: boolean) => { if (!o) onClose(); }}>
       <AnimatePresence>
@@ -17,10 +22,10 @@ export default function CenterModal({ open, onClose, children, maxWidth = 480 }:
           <DialogPrimitive.Portal forceMount>
             <DialogPrimitive.Overlay className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm" asChild>
               <motion.div
-                initial={{ opacity: 0 }}
+                initial={reduced ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={reduced ? instant : { duration: 0.2 }}
               />
             </DialogPrimitive.Overlay>
             <DialogPrimitive.Content
@@ -30,10 +35,10 @@ export default function CenterModal({ open, onClose, children, maxWidth = 480 }:
               forceMount
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                initial={reduced ? false : { opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300, duration: 0.2 }}
+                exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 10 }}
+                transition={reduced ? instant : { type: 'spring', damping: 25, stiffness: 300, duration: 0.2 }}
 
               >
                 {/* Visually hidden title for accessibility */}

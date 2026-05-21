@@ -55,7 +55,7 @@ export default function DashboardAgendaToday({
                         <div className="text-[12px] font-medium truncate">{t.data.title}</div>
                         <div className="text-[10px] text-[var(--af-text3)]">{proj?.data?.name || ''} · Venció hace {daysOver}d</div>
                       </div>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${prioColor(t.data.priority)}`}>{t.data.priority}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${prioColor(t.data.priority)}`}>{t.data.priority}</span>
                     </div>
                   );
                 })}
@@ -81,7 +81,7 @@ export default function DashboardAgendaToday({
                         <div className="text-[10px] text-[var(--af-text3)]">{proj?.data?.name || ''} · {m.data.time || '09:00'} · {m.data.duration || 60}min</div>
                       </div>
                       {m.data.attendees && Array.isArray(m.data.attendees) && m.data.attendees.length > 0 && (
-                        <span className="text-[9px] text-[var(--af-text3)] flex-shrink-0">👥 {m.data.attendees.length}</span>
+                        <span className="text-[10px] text-[var(--af-text3)] flex-shrink-0">👥 {m.data.attendees.length}</span>
                       )}
                     </div>
                   );
@@ -106,7 +106,7 @@ export default function DashboardAgendaToday({
                         <div className="text-[12px] font-medium truncate">{t.data.title}</div>
                         <div className="text-[10px] text-[var(--af-text3)]">{proj?.data?.name || ''} · {t.data.status}</div>
                       </div>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${prioColor(t.data.priority)}`}>{t.data.priority}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${prioColor(t.data.priority)}`}>{t.data.priority}</span>
                     </div>
                   );
                 })}

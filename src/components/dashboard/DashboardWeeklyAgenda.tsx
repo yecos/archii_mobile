@@ -83,7 +83,7 @@ export default function DashboardWeeklyAgenda({
                 borderBottom: '1px solid var(--border)',
                 padding: '2px 4px',
                 textAlign: 'right',
-                fontSize: '9px',
+                fontSize: '10px',
                 color: 'var(--muted-foreground)',
                 display: 'flex',
                 alignItems: 'flex-start',
@@ -162,14 +162,14 @@ export default function DashboardWeeklyAgenda({
                           </div>
 
                           {/* Time range */}
-                          <div className="flex items-center gap-1 mt-0.5" style={{ color: 'var(--muted-foreground)', fontSize: '9px' }}>
+                          <div className="flex items-center gap-1 mt-0.5" style={{ color: 'var(--muted-foreground)', fontSize: '10px' }}>
                             <Clock className="w-2.5 h-2.5" aria-hidden="true"/>
                             <span>{agendaFormatHourRange(meta.hourSlots)}</span>
                           </div>
 
                           {/* Project */}
                           {task.data.projectId && (
-                            <div className="flex items-center gap-1 mt-0.5" style={{ color: 'var(--muted-foreground)', fontSize: '9px' }}>
+                            <div className="flex items-center gap-1 mt-0.5" style={{ color: 'var(--muted-foreground)', fontSize: '10px' }}>
                               <FolderKanban className="w-2.5 h-2.5" aria-hidden="true"/>
                               <span className="truncate">{agendaProjectMap[task.data.projectId] || '—'}</span>
                             </div>

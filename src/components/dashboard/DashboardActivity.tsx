@@ -46,12 +46,12 @@ export default function DashboardActivity({
                 else if (item.type === 'punch') navigateTo('punchList');
                 else if (item.type === 'task') navigateTo('tasks');
               }}>
-                <div className={`w-6 h-6 rounded-lg ${item.color} flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 mt-0.5`}>{item.icon}</div>
+                <div className={`w-6 h-6 rounded-lg ${item.color} flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mt-0.5`}>{item.icon}</div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[12px] font-medium truncate">{item.title}</div>
                   <div className="text-[10px] text-[var(--af-text3)] truncate">{item.subtitle}</div>
                 </div>
-                <span className="text-[9px] text-[var(--af-text3)] flex-shrink-0 mt-0.5">{fmtDate(item.time)}</span>
+                <span className="text-[10px] text-[var(--af-text3)] flex-shrink-0 mt-0.5">{fmtDate(item.time)}</span>
               </div>
             ))}
           </div>
@@ -64,7 +64,7 @@ export default function DashboardActivity({
           <div className="text-[14px] font-semibold flex items-center gap-2">
             <span className="text-sm">🔔</span> Notificaciones
           </div>
-          {unreadCount > 0 && <span className="text-[9px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 font-medium">{unreadCount} sin leer</span>}
+          {unreadCount > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 font-medium">{unreadCount} sin leer</span>}
         </div>
         <div className="space-y-1.5 max-h-[240px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
           {unreadNotifs.length === 0 && readNotifs.length === 0 ? (

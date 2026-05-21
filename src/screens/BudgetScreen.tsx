@@ -12,7 +12,7 @@ import { exportBudgetPDF } from '@/lib/export-pdf';
 import { exportExpensesExcel } from '@/lib/export-excel';
 
 const CAT_COLORS: Record<string, string> = {
-  'Materiales': '#c8a96e',
+  'Materiales': '#d4b87a',
   'Mano de obra': '#3a7cc4',
   'Mobiliario': '#7b5bbf',
   'Acabados': '#10b981',
@@ -352,8 +352,8 @@ export default function BudgetScreen() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--af-bg4)" vertical={false} />
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => v >= 1e6 ? `${(v / 1e6).toFixed(0)}M` : v >= 1e3 ? `${(v / 1e3).toFixed(0)}K` : String(v)} />
-                <Tooltip content={<ChartTooltipContent />} cursor={{ fill: 'rgba(200,169,110,0.06)' }} />
-                <Bar dataKey="total" name="Gasto" fill="#c8a96e" radius={[4, 4, 0, 0]} barSize={28} />
+                <Tooltip content={<ChartTooltipContent />} cursor={{ fill: 'rgba(212,184,122,0.06)' }} />
+                <Bar dataKey="total" name="Gasto" fill="#d4b87a" radius={[4, 4, 0, 0]} barSize={28} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -453,7 +453,7 @@ export default function BudgetScreen() {
                         <span>{e.data.category}</span>
                         {e.data.date && <span> · {e.data.date}</span>}
                         {e.data.vendor && <span> · {e.data.vendor}</span>}
-                        {e.data.paymentMethod && e.data.paymentMethod !== 'Efectivo' && <span className="text-[9px] px-1 py-0.5 rounded bg-[var(--af-bg4)]">{e.data.paymentMethod}</span>}
+                        {e.data.paymentMethod && e.data.paymentMethod !== 'Efectivo' && <span className="text-[10px] px-1 py-0.5 rounded bg-[var(--af-bg4)]">{e.data.paymentMethod}</span>}
                       </div>
                     </div>
                     <div className="text-sm font-semibold">{fmtCOP(Number(e.data.amount))}</div>

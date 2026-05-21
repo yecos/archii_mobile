@@ -67,7 +67,7 @@ export default function ProjectTimelineView({ projects, getHealth, onOpenProject
       <div className="relative border-b border-[var(--border)] h-7 overflow-hidden">
         {monthMarkers.map((m, i) => (
           <div key={i} className="absolute top-0 h-full flex items-center" style={{ left: m.pct + '%' }}>
-            <span className="text-[9px] text-[var(--muted-foreground)] pl-1 whitespace-nowrap">{m.label}</span>
+            <span className="text-[10px] text-[var(--muted-foreground)] pl-1 whitespace-nowrap">{m.label}</span>
             <div className="w-px h-full bg-[var(--af-bg4)] ml-1" />
           </div>
         ))}
@@ -109,7 +109,7 @@ export default function ProjectTimelineView({ projects, getHealth, onOpenProject
                     <div className="absolute inset-0 opacity-90 rounded-md" style={{ background: barColor }} />
                     <div className="relative z-10 flex items-center justify-between px-2 w-full">
                       <span className="text-[10px] font-medium text-white truncate">{d.progress || 0}%</span>
-                      <span className="text-[9px] text-white/80 hidden sm:inline">{STATUS_LABELS[d.status] || d.status}</span>
+                      <span className="text-[10px] text-white/80 hidden sm:inline">{STATUS_LABELS[d.status] || d.status}</span>
                     </div>
                     {/* Progress fill inside bar */}
                     <div className="absolute top-0 left-0 bottom-0 bg-white/20 rounded-l-md" style={{ width: (d.progress || 0) + '%' }} />

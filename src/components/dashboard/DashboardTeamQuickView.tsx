@@ -33,13 +33,13 @@ export default function DashboardTeamQuickView({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-0.5">
                     <span className="text-[11px] font-medium">{w.name}</span>
-                    <span className="text-[9px] text-[var(--af-text3)]">{w.completadas}/{total}</span>
+                    <span className="text-[10px] text-[var(--af-text3)]">{w.completadas}/{total}</span>
                   </div>
                   <div className="h-1 bg-[var(--af-bg4)] rounded-full overflow-hidden">
                     <div className="h-full rounded-full bg-emerald-500/60 transition-all" style={{ width: pct + '%' }} />
                   </div>
                 </div>
-                {w.activas > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 flex-shrink-0">{w.activas}</span>}
+                {w.activas > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 flex-shrink-0">{w.activas}</span>}
               </div>
             );
           })

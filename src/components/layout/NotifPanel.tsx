@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { useNotificationsContext } from '@/hooks/useNotifications';
 import { Bell, MessageCircle, ClipboardList, Calendar, Package, Folder, CheckCircle, Clock, Volume2, Check, Loader, XCircle, CircleHelp, FileCheck, ListChecks, Mail, Smartphone, Radio, Settings } from 'lucide-react';
@@ -43,12 +43,41 @@ export default function NotifPanel() {
     setPushRegistering(false);
   }, [toggleChannel]);
 
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap + Escape close
+  useEffect(() => {
+    if (!showNotifPanel) return;
+    const el = panelRef.current;
+    if (!el) return;
+    const focusable = el.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (focusable.length > 0) {
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') { setShowNotifPanel(false); return; }
+        if (e.key !== 'Tab') return;
+        if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+        else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
+      };
+      el.addEventListener('keydown', handleKeyDown);
+      first.focus();
+      return () => el.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showNotifPanel, setShowNotifPanel]);
+
   if (!showNotifPanel) return null;
 
   return (
     <>
-      <div className="fixed inset-0 z-40" onClick={() => setShowNotifPanel(false)} />
-      <div className="absolute right-2 sm:right-4 z-[60] w-[calc(100vw-16px)] sm:w-[400px] max-h-[85dvh] bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-2xl overflow-hidden animate-fadeIn flex flex-col" style={{ top: 'calc(60px + env(safe-area-inset-top, 0px))', animation: 'fadeIn 0.2s ease' }}>
+      <div className="fixed inset-0 z-40" onClick={() => setShowNotifPanel(false)} aria-hidden="true" />
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Notificaciones"
+        className="absolute right-2 sm:right-4 z-[60] w-[calc(100vw-16px)] sm:w-[400px] max-h-[85dvh] bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-2xl overflow-hidden animate-fadeIn flex flex-col" style={{ top: 'calc(60px + env(safe-area-inset-top, 0px))', animation: 'fadeIn 0.2s ease' }}
+      >
         {/* Header */}
         <div className="p-4 border-b border-[var(--border)] flex-shrink-0">
           <div className="flex items-center justify-between mb-3">
@@ -131,7 +160,7 @@ export default function NotifPanel() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <div className={`text-[13px] leading-snug ${!n.read ? 'font-semibold' : 'font-medium'}`}>{n.title}</div>
-                    {n.type && <span className={`text-[9px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${({chat:'bg-blue-500/10 text-blue-400',task:'bg-purple-500/10 text-purple-400',meeting:'bg-amber-500/10 text-amber-400',inventory:'bg-emerald-500/10 text-emerald-400',project:'bg-cyan-500/10 text-cyan-400',approval:'bg-pink-500/10 text-pink-400',reminder:'bg-red-500/10 text-red-400'} as any)[n.type] || 'bg-[var(--af-bg4)] text-[var(--muted-foreground)]'}`}>{n.type}</span>}
+                    {n.type && <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${({chat:'bg-blue-500/10 text-blue-400',task:'bg-purple-500/10 text-purple-400',meeting:'bg-amber-500/10 text-amber-400',inventory:'bg-emerald-500/10 text-emerald-400',project:'bg-cyan-500/10 text-cyan-400',approval:'bg-pink-500/10 text-pink-400',reminder:'bg-red-500/10 text-red-400'} as any)[n.type] || 'bg-[var(--af-bg4)] text-[var(--muted-foreground)]'}`}>{n.type}</span>}
                   </div>
                   <div className="text-[11px] text-[var(--muted-foreground)] mt-0.5 line-clamp-2">{n.body}</div>
                   <div className="text-[10px] text-[var(--af-text3)] mt-1">
@@ -202,7 +231,7 @@ export default function NotifPanel() {
                 </button>
               </div>
               {!pushSupported && (
-                <div className="text-[9px] text-[var(--af-text3)] mt-1.5 flex items-center gap-1">
+                <div className="text-[10px] text-[var(--af-text3)] mt-1.5 flex items-center gap-1">
                   <Radio size={9} aria-hidden="true"/> Push requiere configuración del servidor (VAPID keys)
                 </div>
               )}

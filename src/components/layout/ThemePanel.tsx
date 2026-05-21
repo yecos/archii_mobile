@@ -111,7 +111,7 @@ function ThemeCard({ themeDef, isActive, onSelect }: {
           <span className="text-sm">{themeDef.icon}</span>
           <span className="text-[13px] font-semibold text-[var(--foreground)]">{themeDef.label}</span>
           {isActive && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--af-accent)]/15 text-[var(--af-accent)] border border-[var(--af-accent)]/30">
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--af-accent)]/15 text-[var(--af-accent)] border border-[var(--af-accent)]/30">
               ACTIVO
             </span>
           )}

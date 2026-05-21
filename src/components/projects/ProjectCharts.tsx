@@ -66,7 +66,7 @@ export default function ProjectCharts({
               <CartesianGrid strokeDasharray="3 3" stroke="var(--af-bg4)" vertical={false} />
               <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} allowDecimals={false} />
-              <Tooltip content={<ChartTooltipContent />} cursor={{ fill: 'rgba(200,169,110,0.06)' }} />
+              <Tooltip content={<ChartTooltipContent />} cursor={{ fill: 'rgba(212,184,122,0.06)' }} />
               <Bar dataKey="total" name="Proyectos" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} />
             </BarChart>
           </ResponsiveContainer>

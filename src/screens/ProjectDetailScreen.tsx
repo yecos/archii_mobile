@@ -6,7 +6,7 @@ import { useOneDrive, formatFileSize, getFileIcon } from '@/hooks/useOneDrive';
 import { getFirebase } from '@/lib/firebase-service';
 import { fmtCOP, fmtDate, fmtSize, statusColor, prioColor, taskStColor } from '@/lib/helpers';
 import { isOverdue as checkOverdue } from '@/lib/kanban-helpers';
-import { Plus, Layers, MessageSquare, BarChart3, Calendar, Send, ChevronLeft, X, Pencil, Eye, Trash2 } from 'lucide-react';
+import { Plus, Layers, MessageSquare, BarChart3, Calendar, Send, ChevronLeft, X, Pencil, Eye, Trash2, Download, XCircle } from 'lucide-react';
 import { PROJECT_TYPE_COLORS, EXPENSE_CATS, type Task, type WorkPhase, type Expense, type Comment, type TimeEntry, type RFI, type Submittal, type PunchItem, type TeamUser, type DailyLog } from '@/lib/types';
 import { SkeletonFileList } from '@/components/ui/SkeletonLoaders';
 import { useConfirmDialog } from '@/lib/useConfirmDialog';
@@ -375,8 +375,8 @@ export default function ProjectDetailScreen() {
                     </div>
                   </div>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full ${taskStColor(t.data.status)}`}>{t.data.status}</span>
-                  <button className="text-xs px-1.5 py-0.5 rounded bg-[var(--af-accent)]/10 text-[var(--af-accent)] cursor-pointer hover:bg-[var(--af-accent)]/20" onClick={() => openEditTask(t)}>✎</button>
-                  <button className="text-xs px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 cursor-pointer hover:bg-red-500/20" onClick={() => deleteTask(t.id)}>✕</button>
+                  <button aria-label="Editar tarea" className="text-xs px-1.5 py-0.5 rounded bg-[var(--af-accent)]/10 text-[var(--af-accent)] cursor-pointer hover:bg-[var(--af-accent)]/20" onClick={() => openEditTask(t)}><Pencil size={11} aria-hidden="true"/></button>
+                  <button aria-label="Eliminar tarea" className="text-xs px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 cursor-pointer hover:bg-red-500/20" onClick={() => deleteTask(t.id)}><Trash2 size={11} aria-hidden="true"/></button>
                 </div>
               ))}
             </div>)}
@@ -402,17 +402,17 @@ export default function ProjectDetailScreen() {
                     <div className="bg-blue-500/10 rounded-xl p-3 text-center">
                       <div className="text-lg font-bold text-blue-400">{projRFIs.length}</div>
                       <div className="text-[10px] text-blue-400/70">RFIs</div>
-                      <div className="text-[9px] text-[var(--muted-foreground)]">{projRFIs.filter((r: RFI) => r.data.status === 'Abierto').length} abiertos</div>
+                      <div className="text-[10px] text-[var(--muted-foreground)]">{projRFIs.filter((r: RFI) => r.data.status === 'Abierto').length} abiertos</div>
                     </div>
                     <div className="bg-purple-500/10 rounded-xl p-3 text-center">
                       <div className="text-lg font-bold text-purple-400">{projSubs.length}</div>
                       <div className="text-[10px] text-purple-400/70">Submittals</div>
-                      <div className="text-[9px] text-[var(--muted-foreground)]">{projSubs.filter((s: Submittal) => s.data.status === 'Aprobado').length} aprobados</div>
+                      <div className="text-[10px] text-[var(--muted-foreground)]">{projSubs.filter((s: Submittal) => s.data.status === 'Aprobado').length} aprobados</div>
                     </div>
                     <div className="bg-teal-500/10 rounded-xl p-3 text-center">
                       <div className="text-lg font-bold text-teal-400">{punchPct}%</div>
                       <div className="text-[10px] text-teal-400/70">Punch List</div>
-                      <div className="text-[9px] text-[var(--muted-foreground)]">{punchDone}/{projPunch.length} items</div>
+                      <div className="text-[10px] text-[var(--muted-foreground)]">{punchDone}/{projPunch.length} items</div>
                     </div>
                   </div>
 
@@ -428,7 +428,7 @@ export default function ProjectDetailScreen() {
                           <div key={r.id} className="flex items-center gap-3 py-2 border-b border-[var(--border)] last:border-0">
                             <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400">{r.data.number}</span>
                             <div className="flex-1 min-w-0 text-[13px] font-medium truncate">{r.data.subject}</div>
-                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${r.data.status === 'Abierto' ? 'bg-blue-500/15 text-blue-400' : r.data.status === 'Respondido' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-[var(--af-bg4)] text-[var(--muted-foreground)]'}`}>{r.data.status}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${r.data.status === 'Abierto' ? 'bg-blue-500/15 text-blue-400' : r.data.status === 'Respondido' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-[var(--af-bg4)] text-[var(--muted-foreground)]'}`}>{r.data.status}</span>
                           </div>
                         ))}
                         {projRFIs.length > 5 && <div className="text-[11px] text-[var(--af-accent)] cursor-pointer text-center hover:underline" onClick={() => { /* navigate to RFIs filtered */ }}>+{projRFIs.length - 5} más...</div>}
@@ -448,7 +448,7 @@ export default function ProjectDetailScreen() {
                           <div key={s.id} className="flex items-center gap-3 py-2 border-b border-[var(--border)] last:border-0">
                             <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-purple-500/10 text-purple-400">{s.data.number}</span>
                             <div className="flex-1 min-w-0 text-[13px] font-medium truncate">{s.data.title}</div>
-                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${s.data.status === 'Aprobado' ? 'bg-emerald-500/15 text-emerald-400' : s.data.status === 'Rechazado' ? 'bg-red-500/15 text-red-400' : s.data.status === 'En revisión' ? 'bg-amber-500/15 text-amber-400' : 'bg-[var(--af-bg4)] text-[var(--muted-foreground)]'}`}>{s.data.status}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${s.data.status === 'Aprobado' ? 'bg-emerald-500/15 text-emerald-400' : s.data.status === 'Rechazado' ? 'bg-red-500/15 text-red-400' : s.data.status === 'En revisión' ? 'bg-amber-500/15 text-amber-400' : 'bg-[var(--af-bg4)] text-[var(--muted-foreground)]'}`}>{s.data.status}</span>
                           </div>
                         ))}
                         {projSubs.length > 5 && <div className="text-[11px] text-[var(--af-accent)] cursor-pointer text-center hover:underline">+{projSubs.length - 5} más...</div>}
@@ -470,7 +470,7 @@ export default function ProjectDetailScreen() {
                       <div className="space-y-2">
                         {projPunch.slice(0, 5).map((pi: PunchItem) => (
                           <div key={pi.id} className="flex items-center gap-3 py-2 border-b border-[var(--border)] last:border-0">
-                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${pi.data.status === 'Completado' ? 'bg-emerald-500/15 text-emerald-400' : pi.data.status === 'En progreso' ? 'bg-amber-500/15 text-amber-400' : 'bg-red-500/15 text-red-400'}`}>{pi.data.status}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${pi.data.status === 'Completado' ? 'bg-emerald-500/15 text-emerald-400' : pi.data.status === 'En progreso' ? 'bg-amber-500/15 text-amber-400' : 'bg-red-500/15 text-red-400'}`}>{pi.data.status}</span>
                             <div className="flex-1 min-w-0 text-[13px] font-medium truncate">{pi.data.title}</div>
                             <span className="text-[10px] text-[var(--af-text3)]">{pi.data.location}</span>
                           </div>
@@ -684,12 +684,12 @@ export default function ProjectDetailScreen() {
                                       ) : f.name}
                                     </div>
                                     <div className="text-[10px] text-[var(--af-text3)]">{f.folder ? 'Carpeta' : formatFileSize(f.size || 0)}</div>
-                                    {f.lastModifiedDateTime && <div className="text-[9px] text-[var(--af-text3)]">{timeAgo(f.lastModifiedDateTime)}</div>}
+                                    {f.lastModifiedDateTime && <div className="text-[10px] text-[var(--af-text3)]">{timeAgo(f.lastModifiedDateTime)}</div>}
                                     {!f.folder && (
                                       <div className="flex items-center gap-1 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                                        <button onClick={() => od.downloadOneDriveFile(f.id, f.name)} className="text-[10px] px-1.5 py-0.5 rounded hover:bg-[var(--card)] cursor-pointer bg-transparent border-none">⬇️</button>
-                                        <button onClick={() => { od.setOdRenaming(f.id); od.setOdRenameName(f.name); }} className="text-[10px] px-1.5 py-0.5 rounded hover:bg-[var(--card)] cursor-pointer bg-transparent border-none">✏️</button>
-                                        <button onClick={async () => { if (await confirmDialog.confirm({ title: 'Eliminar archivo de OneDrive', description: '¿Estás seguro de que deseas eliminar este archivo de OneDrive?' })) { od.deleteFromOneDrive(f.id, od.odCurrentFolder); } }} className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 cursor-pointer border-none hover:bg-red-500/20">✕</button>
+                                        <button aria-label="Descargar archivo" onClick={() => od.downloadOneDriveFile(f.id, f.name)} className="text-[10px] px-1.5 py-0.5 rounded hover:bg-[var(--card)] cursor-pointer bg-transparent border-none"><Download size={11} aria-hidden="true"/></button>
+                                        <button aria-label="Renombrar archivo" onClick={() => { od.setOdRenaming(f.id); od.setOdRenameName(f.name); }} className="text-[10px] px-1.5 py-0.5 rounded hover:bg-[var(--card)] cursor-pointer bg-transparent border-none"><Pencil size={11} aria-hidden="true"/></button>
+                                        <button aria-label="Eliminar archivo" onClick={async () => { if (await confirmDialog.confirm({ title: 'Eliminar archivo de OneDrive', description: '¿Estás seguro de que desea eliminar este archivo de OneDrive?' })) { od.deleteFromOneDrive(f.id, od.odCurrentFolder); } }} className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 cursor-pointer border-none hover:bg-red-500/20"><Trash2 size={11} aria-hidden="true"/></button>
                                       </div>
                                     )}
                                   </div>
@@ -729,11 +729,11 @@ export default function ProjectDetailScreen() {
                                     <div className="flex items-center gap-0.5 w-[60px] shrink-0 justify-end opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                                       {!f.folder && (
                                         <>
-                                          <button onClick={() => od.downloadOneDriveFile(f.id, f.name)} className="text-[10px] px-1 py-0.5 rounded hover:bg-[var(--af-bg4)] cursor-pointer bg-transparent border-none" title="Descargar">⬇️</button>
-                                          <button onClick={() => { od.setOdRenaming(f.id); od.setOdRenameName(f.name); }} className="text-[10px] px-1 py-0.5 rounded hover:bg-[var(--af-bg4)] cursor-pointer bg-transparent border-none" title="Renombrar">✏️</button>
+                                          <button aria-label="Descargar archivo" onClick={() => od.downloadOneDriveFile(f.id, f.name)} className="text-[10px] px-1 py-0.5 rounded hover:bg-[var(--af-bg4)] cursor-pointer bg-transparent border-none" title="Descargar"><Download size={10} aria-hidden="true"/></button>
+                                          <button aria-label="Renombrar archivo" onClick={() => { od.setOdRenaming(f.id); od.setOdRenameName(f.name); }} className="text-[10px] px-1 py-0.5 rounded hover:bg-[var(--af-bg4)] cursor-pointer bg-transparent border-none" title="Renombrar"><Pencil size={10} aria-hidden="true"/></button>
                                         </>
                                       )}
-                                      <button onClick={async () => { if (await confirmDialog.confirm({ title: 'Eliminar de OneDrive', description: '¿Estás seguro de que deseas eliminar este archivo de OneDrive?' })) { od.deleteFromOneDrive(f.id, od.odCurrentFolder); } }} className="text-[10px] px-1 py-0.5 rounded bg-red-500/10 text-red-400 cursor-pointer border-none hover:bg-red-500/20" title="Eliminar">✕</button>
+                                      <button aria-label="Eliminar archivo" onClick={async () => { if (await confirmDialog.confirm({ title: 'Eliminar de OneDrive', description: '¿Estás seguro de que deseas eliminar este archivo de OneDrive?' })) { od.deleteFromOneDrive(f.id, od.odCurrentFolder); } }} className="text-[10px] px-1 py-0.5 rounded bg-red-500/10 text-red-400 cursor-pointer border-none hover:bg-red-500/20" title="Eliminar"><Trash2 size={10} aria-hidden="true"/></button>
                                     </div>
                                   </div>
                                 ))}
@@ -902,7 +902,7 @@ export default function ProjectDetailScreen() {
                                       <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
                                         <div className="flex items-center gap-2">
                                           <span className="text-sm font-semibold">{phase.data.name}</span>
-                                          {!enabled && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--af-bg4)] text-[var(--muted-foreground)]">OFF</span>}
+                                          {!enabled && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--af-bg4)] text-[var(--muted-foreground)]">OFF</span>}
                                         </div>
                                         <div className="flex items-center gap-2">
                                           <select className="bg-[var(--card)] border border-[var(--input)] rounded-md px-2 py-1 text-xs text-[var(--foreground)] outline-none cursor-pointer" value={phase.data.status} onChange={e => updatePhaseStatus(phase.id, e.target.value)}>
@@ -987,7 +987,7 @@ export default function ProjectDetailScreen() {
                                       <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
                                         <div className="flex items-center gap-2">
                                           <span className="text-sm font-semibold">{phase.data.name}</span>
-                                          {!enabled && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--af-bg4)] text-[var(--muted-foreground)]">OFF</span>}
+                                          {!enabled && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--af-bg4)] text-[var(--muted-foreground)]">OFF</span>}
                                         </div>
                                         <div className="flex items-center gap-2">
                                           <select className="bg-[var(--card)] border border-[var(--input)] rounded-md px-2 py-1 text-xs text-[var(--foreground)] outline-none cursor-pointer" value={phase.data.status} onChange={e => updatePhaseStatus(phase.id, e.target.value)}>
@@ -1197,7 +1197,7 @@ export default function ProjectDetailScreen() {
                               {d.photos?.length > 0 && (
                                 <div className="flex gap-1.5 mt-2">
                                   {d.photos.slice(0, 4).map((p: string, i: number) => (
-                                    <img key={i} src={p} alt="" className="w-14 h-14 rounded-lg object-cover border border-[var(--border)]" />
+                                    <img key={i} src={p} alt="Foto del proyecto" className="w-14 h-14 rounded-lg object-cover border border-[var(--border)]" />
                                   ))}
                                   {d.photos.length > 4 && <div className="w-14 h-14 rounded-lg bg-[var(--af-bg3)] flex items-center justify-center text-[11px] text-[var(--muted-foreground)] border border-[var(--border)]">+{d.photos.length - 4}</div>}
                                 </div>
@@ -1280,7 +1280,7 @@ export default function ProjectDetailScreen() {
                           <div className="mb-4">
                             <div className="text-[11px] font-semibold uppercase text-[var(--muted-foreground)] mb-2">Fotos del Día ({d.photos.length})</div>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                              {d.photos.map((p: string, i: number) => <img key={i} src={p} alt="" className="w-full h-28 rounded-lg object-cover border border-[var(--border)] cursor-pointer hover:opacity-90 transition-opacity" />)}
+                              {d.photos.map((p: string, i: number) => <img key={i} src={p} alt="Foto del diario de obra" className="w-full h-28 rounded-lg object-cover border border-[var(--border)] cursor-pointer hover:opacity-90 transition-opacity" />)}
                             </div>
                           </div>
                         )}
@@ -1408,7 +1408,7 @@ export default function ProjectDetailScreen() {
                         <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
                           {(logForm.photos || []).map((p: string, i: number) => (
                             <div key={i} className="relative flex-shrink-0 w-20 h-20">
-                              <img src={p} alt="" className="w-full h-full rounded-lg object-cover border border-[var(--border)]" />
+                              <img src={p} alt="Foto del proyecto" className="w-full h-full rounded-lg object-cover border border-[var(--border)]" />
                               <button className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center cursor-pointer border-none leading-none" onClick={() => { const arr = (logForm.photos || []).filter((_: string, idx: number) => idx !== i); setLogForm((pf: Record<string, any>) => ({ ...pf, photos: arr })); }}>✕</button>
                             </div>
                           ))}
@@ -1453,14 +1453,14 @@ export default function ProjectDetailScreen() {
                 <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 overflow-x-auto">
                   <div className="text-[13px] font-semibold mb-4">Cronograma del proyecto</div>
                   <div className="relative" style={{ minWidth: Math.max(600, ganttData.totalDays * 8) + 'px' }}>
-                    {(() => { const months: string[] = []; if (ganttData.timelineStart) { const s = new Date(ganttData.timelineStart); for (let i = 0; i < ganttData.totalDays; i += 30) { const d = new Date(s); d.setDate(d.getDate() + i); months.push(d.toLocaleDateString('es-CO', { month: 'short', year: '2-digit' })); } } return months.length > 0 && <div className="flex mb-2 ml-[200px] border-b border-[var(--border)] pb-1">{months.map((m: string, i: number) => <div key={i} className="text-[9px] text-[var(--muted-foreground)] shrink-0" style={{ width: (30 / ganttData.totalDays * 100) + '%' }}>{m}</div>)}</div>; })()}
-                    {(() => { if (!ganttData.timelineStart) return null; const off = calcGanttOffset(today, ganttData.timelineStart); if (off < 0 || off > ganttData.totalDays) return null; const tw = Math.max(600, ganttData.totalDays * 8); return <div className="absolute top-0 bottom-0 z-10 pointer-events-none" style={{ left: (200 + (off / ganttData.totalDays) * tw) + 'px' }}><div className="w-px h-full bg-red-500/40" /><div className="text-[8px] text-red-400 font-medium -ml-[14px] mt-1">Hoy</div></div>; })()}
-                    {ganttData.phases.map((phase: WorkPhase & { days: number; offset: number; tasks: Task[] }) => { const pp = getPhaseProgress(phase.id) ?? (phase.data.status === 'Completado' ? 100 : phase.data.status === 'En progreso' ? 50 : 0); const bw = (phase.days / ganttData.totalDays) * 100; const bl = (phase.offset / ganttData.totalDays) * 100; const bc = phase.data.status === 'Completado' ? 'bg-emerald-500' : phase.data.status === 'En progreso' ? 'bg-[var(--af-accent)]' : 'bg-violet-500/40'; return (<div key={phase.id} className="flex items-center mb-2"><div className="w-[200px] shrink-0 pr-3 text-right"><div className="text-[11px] font-medium truncate">{phase.data.name}</div><div className="text-[9px] text-[var(--muted-foreground)]">{phase.data.startDate} — {phase.data.endDate}</div></div><div className="flex-1 relative h-6 bg-[var(--af-bg3)] rounded-sm overflow-hidden"><div className={"absolute top-0 left-0 h-full rounded-sm opacity-80 " + bc} style={{ width: bw + '%', left: bl + '%' }} /><div className={"absolute top-0 left-0 h-full bg-white/20 rounded-sm"} style={{ width: (bw * pp / 100) + '%', left: bl + '%' }} /><div className="absolute inset-0 flex items-center justify-center"><span className="text-[8px] font-bold text-white drop-shadow">{pp}%</span></div></div></div>); })}
+                    {(() => { const months: string[] = []; if (ganttData.timelineStart) { const s = new Date(ganttData.timelineStart); for (let i = 0; i < ganttData.totalDays; i += 30) { const d = new Date(s); d.setDate(d.getDate() + i); months.push(d.toLocaleDateString('es-CO', { month: 'short', year: '2-digit' })); } } return months.length > 0 && <div className="flex mb-2 ml-[200px] border-b border-[var(--border)] pb-1">{months.map((m: string, i: number) => <div key={i} className="text-[10px] text-[var(--muted-foreground)] shrink-0" style={{ width: (30 / ganttData.totalDays * 100) + '%' }}>{m}</div>)}</div>; })()}
+                    {(() => { if (!ganttData.timelineStart) return null; const off = calcGanttOffset(today, ganttData.timelineStart); if (off < 0 || off > ganttData.totalDays) return null; const tw = Math.max(600, ganttData.totalDays * 8); return <div className="absolute top-0 bottom-0 z-10 pointer-events-none" style={{ left: (200 + (off / ganttData.totalDays) * tw) + 'px' }}><div className="w-px h-full bg-red-500/40" /><div className="text-[9px] text-red-400 font-medium -ml-[14px] mt-1">Hoy</div></div>; })()}
+                    {ganttData.phases.map((phase: WorkPhase & { days: number; offset: number; tasks: Task[] }) => { const pp = getPhaseProgress(phase.id) ?? (phase.data.status === 'Completado' ? 100 : phase.data.status === 'En progreso' ? 50 : 0); const bw = (phase.days / ganttData.totalDays) * 100; const bl = (phase.offset / ganttData.totalDays) * 100; const bc = phase.data.status === 'Completado' ? 'bg-emerald-500' : phase.data.status === 'En progreso' ? 'bg-[var(--af-accent)]' : 'bg-violet-500/40'; return (<div key={phase.id} className="flex items-center mb-2"><div className="w-[200px] shrink-0 pr-3 text-right"><div className="text-[11px] font-medium truncate">{phase.data.name}</div><div className="text-[10px] text-[var(--muted-foreground)]">{phase.data.startDate} — {phase.data.endDate}</div></div><div className="flex-1 relative h-6 bg-[var(--af-bg3)] rounded-sm overflow-hidden"><div className={"absolute top-0 left-0 h-full rounded-sm opacity-80 " + bc} style={{ width: bw + '%', left: bl + '%' }} /><div className={"absolute top-0 left-0 h-full bg-white/20 rounded-sm"} style={{ width: (bw * pp / 100) + '%', left: bl + '%' }} /><div className="absolute inset-0 flex items-center justify-center"><span className="text-[9px] font-bold text-white drop-shadow">{pp}%</span></div></div></div>); })}
                   </div>
                 </div>
               )}
               {ganttData.phases.length > 0 && (
-                <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-4"><div className="text-[13px] font-semibold">Tareas por fase</div>{ganttData.phases.map((phase: WorkPhase & { days: number; offset: number; tasks: Task[] }) => phase.tasks.length > 0 && (<div key={phase.id}><div className="text-[11px] font-medium text-[var(--muted-foreground)] mb-1.5 flex items-center gap-1"><Layers size={10} aria-hidden="true"/> {phase.data.name} ({phase.tasks.length})</div>{phase.tasks.slice(0, 5).map((t: Task) => (<div key={t.id} className="flex items-center gap-2 py-1 ml-3"><div className={"w-1.5 h-1.5 rounded-full " + (t.data.status === 'Completado' ? 'bg-emerald-500' : 'bg-[var(--af-bg4)]')} /><span className={"text-[11px] flex-1 truncate " + (t.data.status === 'Completado' ? 'line-through text-[var(--af-text3)]' : '')}>{t.data.title}</span>{t.data.dueDate && <span className="text-[9px] text-[var(--af-text3)]">{fmtDate(t.data.dueDate)}</span>}</div>))}{phase.tasks.length > 5 && <div className="text-[10px] text-[var(--af-accent)] ml-3">+{phase.tasks.length - 5} mas...</div>}</div>))}</div>
+                <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-4"><div className="text-[13px] font-semibold">Tareas por fase</div>{ganttData.phases.map((phase: WorkPhase & { days: number; offset: number; tasks: Task[] }) => phase.tasks.length > 0 && (<div key={phase.id}><div className="text-[11px] font-medium text-[var(--muted-foreground)] mb-1.5 flex items-center gap-1"><Layers size={10} aria-hidden="true"/> {phase.data.name} ({phase.tasks.length})</div>{phase.tasks.slice(0, 5).map((t: Task) => (<div key={t.id} className="flex items-center gap-2 py-1 ml-3"><div className={"w-1.5 h-1.5 rounded-full " + (t.data.status === 'Completado' ? 'bg-emerald-500' : 'bg-[var(--af-bg4)]')} /><span className={"text-[11px] flex-1 truncate " + (t.data.status === 'Completado' ? 'line-through text-[var(--af-text3)]' : '')}>{t.data.title}</span>{t.data.dueDate && <span className="text-[10px] text-[var(--af-text3)]">{fmtDate(t.data.dueDate)}</span>}</div>))}{phase.tasks.length > 5 && <div className="text-[10px] text-[var(--af-accent)] ml-3">+{phase.tasks.length - 5} mas...</div>}</div>))}</div>
               )}
             </div>)}
 
@@ -1469,20 +1469,20 @@ export default function ProjectDetailScreen() {
               <div className="flex items-center gap-3"><div className="bg-[var(--card)] border border-[var(--border)] rounded-xl px-3 py-2 flex items-center gap-2"><MessageSquare size={14} className="text-[var(--af-accent)]" aria-hidden="true"/><span className="text-sm font-bold">{projComments.length}</span><span className="text-[11px] text-[var(--muted-foreground)]">comentarios</span></div></div>
               {replyingTo && (<div className="bg-[var(--af-accent)]/10 border border-[var(--af-accent)]/20 rounded-lg px-3 py-2 flex items-center justify-between"><span className="text-[11px] text-[var(--af-accent)]">Respondiendo a {(comments || []).find((c: Comment) => c.id === replyingTo)?.data?.userName || '...'}</span><button className="text-[10px] text-red-400 cursor-pointer hover:underline" onClick={() => setReplyingTo(null)}>Cancelar</button></div>)}
               <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3"><textarea className="w-full bg-[var(--af-bg3)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--af-accent)] resize-none" rows={3} placeholder="Escribe un comentario... Usa @ para mencionar" value={commentText} onChange={e => setCommentText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleProjectComment(); }} /><div className="flex justify-end mt-2"><button className="flex items-center gap-1.5 bg-[var(--af-accent)] text-background px-4 py-1.5 rounded-lg text-xs font-semibold cursor-pointer border-none hover:opacity-90 disabled:opacity-40" disabled={!commentText.trim()} onClick={handleProjectComment}><Send size={12} aria-hidden="true"/> Enviar</button></div></div>
-              {projComments.length === 0 ? (<div className="text-center py-16 text-[var(--af-text3)]"><div className="text-4xl mb-3">💬</div><div className="text-sm font-medium">Sin comentarios</div><div className="text-xs mt-1">Inicia la conversacion sobre este proyecto</div></div>) : (<div className="space-y-3">{projComments.map((c: Comment) => { const replies = (projReplies || []).filter((r: Comment) => r.data.parentId === c.id); return (<div key={c.id} className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3"><div className="flex items-start gap-2.5"><div className="w-7 h-7 rounded-full bg-[var(--af-bg4)] flex items-center justify-center text-[11px] font-bold text-[var(--af-accent)] shrink-0 overflow-hidden">{c.data.userPhoto ? <img src={c.data.userPhoto} className="w-full h-full object-cover rounded-full" /> : (c.data.userName || '?')[0].toUpperCase()}</div><div className="flex-1 min-w-0"><div className="flex items-center gap-2 mb-0.5"><span className="text-[12px] font-semibold">{c.data.userName || 'Usuario'}</span>{c.data.createdAt && <span className="text-[9px] text-[var(--muted-foreground)]">{timeAgo(c.data.createdAt)}</span>}</div><div className="text-[12px] text-[var(--foreground)] leading-relaxed whitespace-pre-wrap break-words">{c.data.text}</div>{c.data.mentions && c.data.mentions.length > 0 && <div className="text-[9px] text-blue-400 mt-1">Menciona: {(c.data.mentions || []).map((m: string) => getUserName(m)).filter(Boolean).join(', ')}</div>}<button className="text-[9px] text-[var(--muted-foreground)] mt-1.5 cursor-pointer hover:text-[var(--af-accent)]" onClick={() => setReplyingTo(c.id)}>Responder</button>{replies.length > 0 && (<div className="mt-2 pl-3 border-l-2 border-[var(--af-bg4)] space-y-2">{replies.map((r: Comment) => (<div key={r.id} className="flex items-start gap-2"><div className="w-5 h-5 rounded-full bg-[var(--af-bg4)] flex items-center justify-center text-[9px] font-bold text-[var(--muted-foreground)] shrink-0">{(r.data.userName || '?')[0].toUpperCase()}</div><div className="flex-1 min-w-0"><div className="flex items-center gap-2"><span className="text-[11px] font-medium">{r.data.userName}</span>{r.data.createdAt && <span className="text-[8px] text-[var(--muted-foreground)]">{timeAgo(r.data.createdAt)}</span>}</div><div className="text-[11px] leading-relaxed whitespace-pre-wrap">{r.data.text}</div></div></div>))}</div>)}</div></div></div>); })}</div>)}
+              {projComments.length === 0 ? (<div className="text-center py-16 text-[var(--af-text3)]"><div className="text-4xl mb-3">💬</div><div className="text-sm font-medium">Sin comentarios</div><div className="text-xs mt-1">Inicia la conversacion sobre este proyecto</div></div>) : (<div className="space-y-3">{projComments.map((c: Comment) => { const replies = (projReplies || []).filter((r: Comment) => r.data.parentId === c.id); return (<div key={c.id} className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3"><div className="flex items-start gap-2.5"><div className="w-7 h-7 rounded-full bg-[var(--af-bg4)] flex items-center justify-center text-[11px] font-bold text-[var(--af-accent)] shrink-0 overflow-hidden">{c.data.userPhoto ? <img src={c.data.userPhoto} alt={c.data.userName || 'Usuario'} className="w-full h-full object-cover rounded-full" /> : (c.data.userName || '?')[0].toUpperCase()}</div><div className="flex-1 min-w-0"><div className="flex items-center gap-2 mb-0.5"><span className="text-[12px] font-semibold">{c.data.userName || 'Usuario'}</span>{c.data.createdAt && <span className="text-[10px] text-[var(--muted-foreground)]">{timeAgo(c.data.createdAt)}</span>}</div><div className="text-[12px] text-[var(--foreground)] leading-relaxed whitespace-pre-wrap break-words">{c.data.text}</div>{c.data.mentions && c.data.mentions.length > 0 && <div className="text-[10px] text-blue-400 mt-1">Menciona: {(c.data.mentions || []).map((m: string) => getUserName(m)).filter(Boolean).join(', ')}</div>}<button className="text-[10px] text-[var(--muted-foreground)] mt-1.5 cursor-pointer hover:text-[var(--af-accent)]" onClick={() => setReplyingTo(c.id)}>Responder</button>{replies.length > 0 && (<div className="mt-2 pl-3 border-l-2 border-[var(--af-bg4)] space-y-2">{replies.map((r: Comment) => (<div key={r.id} className="flex items-start gap-2"><div className="w-5 h-5 rounded-full bg-[var(--af-bg4)] flex items-center justify-center text-[10px] font-bold text-[var(--muted-foreground)] shrink-0">{(r.data.userName || '?')[0].toUpperCase()}</div><div className="flex-1 min-w-0"><div className="flex items-center gap-2"><span className="text-[11px] font-medium">{r.data.userName}</span>{r.data.createdAt && <span className="text-[9px] text-[var(--muted-foreground)]">{timeAgo(r.data.createdAt)}</span>}</div><div className="text-[11px] leading-relaxed whitespace-pre-wrap">{r.data.text}</div></div></div>))}</div>)}</div></div></div>); })}</div>)}
             </div>)}
 
             {/* 11. TAB: Reportes */}
             {forms.detailTab === 'Reportes' && (<div className="space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3"><div className="text-lg font-bold">{totalProjectHours.toFixed(1)}h</div><div className="text-[11px] text-[var(--muted-foreground)]">Horas totales</div><div className="text-[9px] text-emerald-400">{billableHours.toFixed(1)}h facturables</div></div>
-                <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3"><div className="text-lg font-bold">{projectTasks.length}</div><div className="text-[11px] text-[var(--muted-foreground)]">Total tareas</div><div className="text-[9px] text-[var(--muted-foreground)]">{taskStatusDist['Completado'] || 0} completadas</div></div>
-                <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3"><div className="text-lg font-bold text-[var(--af-accent)]">{fmtCOP(projectSpent)}</div><div className="text-[11px] text-[var(--muted-foreground)]">Gastado</div><div className="text-[9px] text-[var(--muted-foreground)]">de {fmtCOP(projectBudget)}</div></div>
-                <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3"><div className="text-lg font-bold">{projTimeEntries.length}</div><div className="text-[11px] text-[var(--muted-foreground)]">Registros tiempo</div><div className="text-[9px] text-[var(--muted-foreground)]">{dailyLogs.length} bitacoras</div></div>
+                <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3"><div className="text-lg font-bold">{totalProjectHours.toFixed(1)}h</div><div className="text-[11px] text-[var(--muted-foreground)]">Horas totales</div><div className="text-[10px] text-emerald-400">{billableHours.toFixed(1)}h facturables</div></div>
+                <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3"><div className="text-lg font-bold">{projectTasks.length}</div><div className="text-[11px] text-[var(--muted-foreground)]">Total tareas</div><div className="text-[10px] text-[var(--muted-foreground)]">{taskStatusDist['Completado'] || 0} completadas</div></div>
+                <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3"><div className="text-lg font-bold text-[var(--af-accent)]">{fmtCOP(projectSpent)}</div><div className="text-[11px] text-[var(--muted-foreground)]">Gastado</div><div className="text-[10px] text-[var(--muted-foreground)]">de {fmtCOP(projectBudget)}</div></div>
+                <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3"><div className="text-lg font-bold">{projTimeEntries.length}</div><div className="text-[11px] text-[var(--muted-foreground)]">Registros tiempo</div><div className="text-[10px] text-[var(--muted-foreground)]">{dailyLogs.length} bitacoras</div></div>
               </div>
               <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4"><div className="text-[13px] font-semibold mb-3">Distribucion de tareas</div>{projectTasks.length === 0 ? (<div className="text-center py-6 text-[var(--af-text3)] text-sm">Sin tareas</div>) : (<div className="space-y-2">{Object.entries(taskStatusDist).map(([status, count]) => { const pct = Math.round((count / projectTasks.length) * 100); const colors: Record<string, string> = { 'Por hacer': 'bg-slate-400', 'En progreso': 'bg-blue-500', 'Revision': 'bg-amber-500', 'Completado': 'bg-emerald-500' }; return (<div key={status} className="flex items-center gap-3"><div className="w-20 text-[11px] text-[var(--muted-foreground)] shrink-0">{status}</div><div className="flex-1 h-3 bg-[var(--af-bg3)] rounded-full overflow-hidden"><div className={"h-full rounded-full " + (colors[status] || 'bg-gray-400')} style={{ width: pct + '%' }} /></div><div className="w-14 text-[11px] text-right font-medium">{count} ({pct}%)</div></div>); })}</div>)}</div>
               <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4"><div className="text-[13px] font-semibold mb-3">Gastos por categoria</div>{expenseByCategory.length === 0 ? (<div className="text-center py-6 text-[var(--af-text3)] text-sm">Sin gastos</div>) : (<div className="space-y-2">{expenseByCategory.map(([cat, amount], idx) => { const pct = projectSpent > 0 ? Math.round((amount / projectSpent) * 100) : 0; const colors = ['bg-emerald-500', 'bg-blue-500', 'bg-violet-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500', 'bg-orange-500', 'bg-pink-500']; return (<div key={cat} className="flex items-center gap-3"><div className="w-24 text-[11px] text-[var(--muted-foreground)] shrink-0 truncate">{cat}</div><div className="flex-1 h-3 bg-[var(--af-bg3)] rounded-full overflow-hidden"><div className={"h-full rounded-full " + colors[idx % colors.length]} style={{ width: pct + '%' }} /></div><div className="w-28 text-[11px] text-right font-medium">{fmtCOP(amount)} ({pct}%)</div></div>); })}</div>)}</div>
-              <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4"><div className="text-[13px] font-semibold mb-3">Progreso por fase</div>{enabledPhases.length === 0 ? (<div className="text-center py-6 text-[var(--af-text3)] text-sm">Sin fases</div>) : (<div className="space-y-2.5">{enabledPhases.map((phase: WorkPhase) => { const pp = getPhaseProgress(phase.id) ?? (phase.data.status === 'Completado' ? 100 : phase.data.status === 'En progreso' ? 50 : 0); const tc = projectTasks.filter((t: Task) => t.data.phaseId === phase.id).length; return (<div key={phase.id} className="flex items-center gap-3"><div className={"w-32 text-[11px] shrink-0 truncate " + (phase.data.status === 'Completado' ? 'text-emerald-400' : phase.data.status === 'En progreso' ? 'text-[var(--af-accent)] font-medium' : 'text-[var(--muted-foreground)]')}>{phase.data.name}</div><div className="flex-1 h-3 bg-[var(--af-bg3)] rounded-full overflow-hidden"><div className={"h-full rounded-full transition-all " + (pp >= 80 ? 'bg-emerald-500' : pp >= 40 ? 'bg-[var(--af-accent)]' : 'bg-amber-500')} style={{ width: pp + '%' }} /></div><div className="w-20 text-[11px] text-right font-medium">{pp}%</div><div className="w-16 text-[9px] text-[var(--muted-foreground)] text-right">{tc} tareas</div></div>); })}</div>)}</div>
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4"><div className="text-[13px] font-semibold mb-3">Progreso por fase</div>{enabledPhases.length === 0 ? (<div className="text-center py-6 text-[var(--af-text3)] text-sm">Sin fases</div>) : (<div className="space-y-2.5">{enabledPhases.map((phase: WorkPhase) => { const pp = getPhaseProgress(phase.id) ?? (phase.data.status === 'Completado' ? 100 : phase.data.status === 'En progreso' ? 50 : 0); const tc = projectTasks.filter((t: Task) => t.data.phaseId === phase.id).length; return (<div key={phase.id} className="flex items-center gap-3"><div className={"w-32 text-[11px] shrink-0 truncate " + (phase.data.status === 'Completado' ? 'text-emerald-400' : phase.data.status === 'En progreso' ? 'text-[var(--af-accent)] font-medium' : 'text-[var(--muted-foreground)]')}>{phase.data.name}</div><div className="flex-1 h-3 bg-[var(--af-bg3)] rounded-full overflow-hidden"><div className={"h-full rounded-full transition-all " + (pp >= 80 ? 'bg-emerald-500' : pp >= 40 ? 'bg-[var(--af-accent)]' : 'bg-amber-500')} style={{ width: pp + '%' }} /></div><div className="w-20 text-[11px] text-right font-medium">{pp}%</div><div className="w-16 text-[10px] text-[var(--muted-foreground)] text-right">{tc} tareas</div></div>); })}</div>)}</div>
               <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4"><div className="text-[13px] font-semibold mb-3">Registros de tiempo recientes</div>{projTimeEntries.length === 0 ? (<div className="text-center py-6 text-[var(--af-text3)] text-sm">Sin registros</div>) : (<div className="space-y-2">{projTimeEntries.slice(0, 8).map((te: TimeEntry) => (<div key={te.id} className="flex items-center gap-3 py-1.5"><div className={"w-2 h-2 rounded-full " + (te.data.billable ? 'bg-emerald-500' : 'bg-[var(--af-bg4)]')} /><div className="flex-1 text-[11px] truncate">{te.data.description || te.data.phaseName}</div><div className="text-[10px] text-[var(--muted-foreground)]">{te.data.userName}</div><div className="text-[10px] font-medium w-14 text-right">{(te.data.duration || 0) / 60}h</div></div>))}{projTimeEntries.length > 8 && <div className="text-[10px] text-[var(--af-text3)]">+{projTimeEntries.length - 8} mas...</div>}</div>)}</div>
             </div>)}
 
@@ -1522,22 +1522,22 @@ export default function ProjectDetailScreen() {
                   <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3">
                     <div className="text-lg font-bold">{projectTasks.length}</div>
                     <div className="text-[10px] text-[var(--muted-foreground)]">Tareas totales</div>
-                    <div className="text-[9px] text-[var(--af-text3)]">{completedTasks} completadas</div>
+                    <div className="text-[10px] text-[var(--af-text3)]">{completedTasks} completadas</div>
                   </div>
                   <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
                     <div className="text-lg font-bold text-blue-400">{projRFIs.length}</div>
                     <div className="text-[10px] text-blue-400/70">RFIs</div>
-                    <div className="text-[9px] text-[var(--muted-foreground)]">{projRFIs.filter((r: RFI) => r.data.status === 'Abierto').length} abiertos</div>
+                    <div className="text-[10px] text-[var(--muted-foreground)]">{projRFIs.filter((r: RFI) => r.data.status === 'Abierto').length} abiertos</div>
                   </div>
                   <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3">
                     <div className="text-lg font-bold text-purple-400">{projSubs.length}</div>
                     <div className="text-[10px] text-purple-400/70">Submittals</div>
-                    <div className="text-[9px] text-[var(--muted-foreground)]">{projSubs.filter((s: Submittal) => s.data.status === 'Aprobado').length} aprobados</div>
+                    <div className="text-[10px] text-[var(--muted-foreground)]">{projSubs.filter((s: Submittal) => s.data.status === 'Aprobado').length} aprobados</div>
                   </div>
                   <div className="bg-teal-500/10 border border-teal-500/20 rounded-xl p-3">
                     <div className="text-lg font-bold text-teal-400">{punchPct}%</div>
                     <div className="text-[10px] text-teal-400/70">Punch List</div>
-                    <div className="text-[9px] text-[var(--muted-foreground)]">{punchDone}/{projPunch.length} items</div>
+                    <div className="text-[10px] text-[var(--muted-foreground)]">{punchDone}/{projPunch.length} items</div>
                   </div>
                 </div>
 
@@ -1611,7 +1611,7 @@ export default function ProjectDetailScreen() {
                         <div key={f.id} className="flex items-center gap-3 py-1.5">
                           <div className="text-[var(--af-text3)]">{f.data?.type === 'image' ? '🖼️' : '📄'}</div>
                           <div className="flex-1 min-w-0 text-[12px] truncate">{f.data?.name || 'Documento'}</div>
-                          <span className="text-[9px] text-[var(--af-text3)]">{f.data?.size ? fmtSize(f.data.size) : ''}</span>
+                          <span className="text-[10px] text-[var(--af-text3)]">{f.data?.size ? fmtSize(f.data.size) : ''}</span>
                         </div>
                       ))}
                     </div>
@@ -1628,7 +1628,7 @@ export default function ProjectDetailScreen() {
                     <div className="space-y-2">
                       {projApprovals.slice(0, 5).map((a: any) => (
                         <div key={a.id} className="flex items-center gap-3 py-1.5">
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${a.data?.status === 'Aprobado' ? 'bg-emerald-500/15 text-emerald-400' : a.data?.status === 'Rechazado' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'}`}>{a.data?.status || 'N/A'}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${a.data?.status === 'Aprobado' ? 'bg-emerald-500/15 text-emerald-400' : a.data?.status === 'Rechazado' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'}`}>{a.data?.status || 'N/A'}</span>
                           <span className="text-[12px] truncate flex-1">{a.data?.title || 'Sin titulo'}</span>
                         </div>
                       ))}

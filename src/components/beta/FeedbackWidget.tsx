@@ -7,6 +7,7 @@ import { isFlagEnabled } from '@/lib/feature-flags';
 import { useUIStore } from '@/stores/ui-store';
 import { trackEvent } from '@/lib/telemetry-service';
 import { toast } from 'sonner';
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 
 /* ─── Star Rating ─── */
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -44,6 +45,8 @@ export default function FeedbackWidget() {
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
+  const reduced = useMotionPreference();
+  const instant = { duration: 0 };
 
   const currentScreen = useUIStore(s => s.currentScreen);
 
@@ -88,15 +91,15 @@ export default function FeedbackWidget() {
         <motion.button
           onClick={() => setOpen(true)}
           className="fixed bottom-20 left-4 md:bottom-6 md:left-6 z-[60] w-12 h-12 rounded-full bg-[var(--card)] border border-[var(--border)] shadow-lg flex items-center justify-center cursor-pointer hover:shadow-xl hover:border-[var(--af-accent)]/30 transition-all"
-          initial={{ scale: 0, opacity: 0 }}
+          initial={reduced ? false : { scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 3, type: 'spring', stiffness: 200, damping: 15 }}
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.95 }}
+          transition={reduced ? instant : { delay: 3, type: 'spring', stiffness: 200, damping: 15 }}
+          whileHover={reduced ? undefined : { scale: 1.08 }}
+          whileTap={reduced ? undefined : { scale: 0.95 }}
           title="Enviar feedback"
         >
           <MessageSquarePlus size={20} className="stroke-[var(--af-accent)]" aria-hidden="true"/>
-          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--af-accent)] text-[8px] font-bold text-background flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--af-accent)] text-[9px] font-bold text-background flex items-center justify-center">
             BETA
           </span>
         </motion.button>
@@ -115,10 +118,10 @@ export default function FeedbackWidget() {
 
             <motion.div
               className="relative z-10 w-full md:w-96 md:ml-6 md:mb-6 bg-[var(--card)] border border-[var(--border)] md:rounded-2xl rounded-t-3xl shadow-2xl"
-              initial={{ y: 100, opacity: 0 }}
+              initial={reduced ? false : { y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 100, opacity: 0 }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              exit={reduced ? { opacity: 0 } : { y: 100, opacity: 0 }}
+              transition={reduced ? instant : { duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             >
               {/* Mobile drag handle */}
               <div className="flex justify-center pt-3 pb-1 md:hidden">
@@ -216,10 +219,10 @@ export default function FeedbackWidget() {
         {sent && (
           <motion.div
             className="fixed bottom-20 left-4 md:bottom-6 md:left-6 z-[60] w-64 bg-[var(--card)] border border-[var(--af-accent)]/20 rounded-2xl p-4 shadow-2xl"
-            initial={{ scale: 0.8, opacity: 0, y: 20 }}
+            initial={reduced ? false : { scale: 0.8, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.8, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+            exit={reduced ? { opacity: 0 } : { scale: 0.8, opacity: 0 }}
+            transition={reduced ? instant : { type: 'spring', stiffness: 200, damping: 15 }}
           >
             <div className="flex items-center gap-3 mb-2">
               <div className="w-8 h-8 rounded-full bg-[var(--af-green)]/15 flex items-center justify-center">

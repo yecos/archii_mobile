@@ -412,7 +412,7 @@ export default function ChatScreen() {
                             </div>
                             <div className="text-[10px] text-[var(--muted-foreground)] mt-0.5">{m.audioDuration ? fmtRecTime(m.audioDuration) : '0:00'}</div>
                           </div>
-                          <div className="text-[9px]">🎙️</div>
+                          <div className="text-[10px]">🎙️</div>
                         </div>
                       )}
 
@@ -545,7 +545,7 @@ export default function ChatScreen() {
                 <div key={f.id} className="flex-shrink-0 w-[72px] h-[72px] rounded-xl border border-[var(--border)] bg-[var(--card)] p-1 relative overflow-hidden shadow-sm">
                   {f.preview ? <img src={f.preview} className="w-full h-full object-cover rounded-lg" alt="" /> : <div className="w-full h-full flex items-center justify-center text-2xl">{fileIcon(f.type)}</div>}
                   <button className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center cursor-pointer border-none leading-none shadow-md" onClick={() => removePendingFile(f.id)}>✕</button>
-                  <div className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] text-white truncate px-0.5 py-px rounded-b-lg">{f.name}</div>
+                  <div className="absolute bottom-0 inset-x-0 bg-black/60 text-[9px] text-white truncate px-0.5 py-px rounded-b-lg">{f.name}</div>
                 </div>
               ))}
             </div>

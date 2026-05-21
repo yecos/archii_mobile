@@ -59,6 +59,7 @@ export default function ProjectCards({
             {/* ★ Batch checkbox */}
             <div className="absolute top-3 right-3 z-10" onClick={e => e.stopPropagation()}>
               <button
+                aria-label={isSelected ? 'Deseleccionar proyecto' : 'Seleccionar proyecto'}
                 className={`w-5 h-5 rounded flex items-center justify-center border transition-all cursor-pointer ${isSelected ? 'bg-[var(--af-accent)] border-[var(--af-accent)]' : 'border-[var(--border)] bg-[var(--card)] opacity-0 group-hover:opacity-100 hover:opacity-100'}`}
                 onClick={() => toggleSelect(p.id)}
               >
@@ -89,8 +90,8 @@ export default function ProjectCards({
               </div>
               {/* Desktop edit/delete */}
               <div className="hidden md:flex gap-1.5" onClick={e => e.stopPropagation()}>
-                <button className="px-2.5 py-1.5 rounded bg-[var(--af-bg4)] text-xs cursor-pointer hover:bg-[var(--af-bg3)]" onClick={() => openEditProject(p)}>✏️</button>
-                <button className="px-2.5 py-1.5 rounded bg-red-500/10 text-xs cursor-pointer hover:bg-red-500/20" onClick={async () => { if (await confirmDialog.confirm({ title: 'Eliminar proyecto', description: `¿Estás seguro de eliminar "${d.name}"? Esta acción no se puede deshacer.` })) deleteProject(p.id); }}>🗑</button>
+                <button aria-label="Editar proyecto" className="px-2.5 py-1.5 rounded bg-[var(--af-bg4)] text-xs cursor-pointer hover:bg-[var(--af-bg3)]" onClick={() => openEditProject(p)}><Pencil size={13} aria-hidden="true"/></button>
+                <button aria-label="Eliminar proyecto" className="px-2.5 py-1.5 rounded bg-red-500/10 text-xs cursor-pointer hover:bg-red-500/20" onClick={async () => { if (await confirmDialog.confirm({ title: 'Eliminar proyecto', description: `¿Estás seguro de eliminar "${d.name}"? Esta acción no se puede deshacer.` })) deleteProject(p.id); }}><Trash2 size={13} aria-hidden="true"/></button>
               </div>
               {/* Mobile overflow */}
               <div className="md:hidden" onClick={e => e.stopPropagation()}>
@@ -144,7 +145,7 @@ export default function ProjectCards({
                       style={{ width: `${(h.val / h.max) * 100}%` }}
                     />
                   </div>
-                  <span className="text-[8px] text-[var(--muted-foreground)]">{h.label}</span>
+                  <span className="text-[9px] text-[var(--muted-foreground)]">{h.label}</span>
                 </div>
               ))}
             </div>

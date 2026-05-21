@@ -173,7 +173,7 @@ function CommentItem({
               className="size-full object-cover"
             />
           ) : (
-            <div className="size-full flex items-center justify-center bg-muted text-[9px] font-semibold text-muted-foreground">
+            <div className="size-full flex items-center justify-center bg-muted text-[10px] font-semibold text-muted-foreground">
               {getInitials(comment.userName)}
             </div>
           )}
@@ -186,7 +186,7 @@ function CommentItem({
         {comment.userRole && (
           <span
             className={cn(
-              'text-[9px] px-1.5 py-0 rounded-full border hidden sm:inline-block',
+              'text-[10px] px-1.5 py-0 rounded-full border hidden sm:inline-block',
               roleColor
             )}
           >
@@ -235,7 +235,7 @@ function CommentItem({
         )}
 
         {isResolved && (
-          <Badge variant="secondary" className="text-[9px] h-4 ml-auto">
+          <Badge variant="secondary" className="text-[10px] h-4 ml-auto">
             Resuelto
           </Badge>
         )}

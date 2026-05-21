@@ -50,7 +50,7 @@ export default function DashboardKPIs({
           </div>
           <div className="text-lg sm:text-xl font-bold leading-tight">{m.val}</div>
           <div className="text-[10px] sm:text-[11px] text-[var(--muted-foreground)] mt-1">{m.lbl}</div>
-          <div className="text-[9px] sm:text-[10px] text-[var(--af-text3)] mt-0.5 truncate">{m.sub}</div>
+          <div className="text-[10px] sm:text-[10px] text-[var(--af-text3)] mt-0.5 truncate">{m.sub}</div>
         </div>
       ))}
     </div>

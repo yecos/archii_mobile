@@ -47,8 +47,8 @@ export default function InventoryScreen() {
               {[{ id: 'dashboard' as const, label: '📊 Panel' }, { id: 'products' as const, label: '📦 Productos' }, { id: 'categories' as const, label: '🏷️ Categorías' }, { id: 'warehouse' as const, label: '🏢 Almacén' }, { id: 'movements' as const, label: '📋 Movimientos' }, { id: 'transfers' as const, label: '🔄 Transferencias' }, { id: 'reports' as const, label: '📊 Reportes' }].map(tab => (
                 <button key={tab.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap cursor-pointer transition-all flex items-center gap-1 ${invTab === tab.id ? 'bg-[var(--af-accent)] text-background' : 'bg-[var(--af-bg3)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}`} onClick={() => setInvTab(tab.id)}>
                   {tab.label}
-                  {tab.id === 'dashboard' && invAlerts.length > 0 && <span className="w-4 h-4 rounded-full bg-red-500 text-[9px] text-white flex items-center justify-center">{invAlerts.length}</span>}
-                  {tab.id === 'transfers' && invPendingTransfers > 0 && <span className="w-4 h-4 rounded-full bg-amber-500 text-[9px] text-white flex items-center justify-center">{invPendingTransfers}</span>}
+                  {tab.id === 'dashboard' && invAlerts.length > 0 && <span className="w-4 h-4 rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center">{invAlerts.length}</span>}
+                  {tab.id === 'transfers' && invPendingTransfers > 0 && <span className="w-4 h-4 rounded-full bg-amber-500 text-[10px] text-white flex items-center justify-center">{invPendingTransfers}</span>}
                 </button>
               ))}
             </div>

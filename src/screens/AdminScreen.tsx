@@ -117,7 +117,7 @@ export default function AdminScreen() {
                           const isWknd = day.getDay() === 0 || day.getDay() === 6;
                           const isToday = day.toDateString() === new Date().toDateString();
                           return (<div key={i} className={`w-[72px] min-w-[72px] flex flex-col items-center justify-center border-r border-[var(--border)]/50 ${isWknd ? 'bg-[var(--af-bg4)]' : ''}`}>
-                            <span className={`text-[9px] ${isWknd ? 'text-[var(--muted-foreground)]/50' : 'text-[var(--muted-foreground)]'}`}>{GANTT_DAY_NAMES[(day.getDay() + 6) % 7]}</span>
+                            <span className={`text-[10px] ${isWknd ? 'text-[var(--muted-foreground)]/50' : 'text-[var(--muted-foreground)]'}`}>{GANTT_DAY_NAMES[(day.getDay() + 6) % 7]}</span>
                             {isToday ? <span className="text-[11px] font-bold bg-[var(--foreground)] text-[var(--card)] w-5 h-5 rounded-full flex items-center justify-center">{day.getDate()}</span> : <span className={`text-[11px] font-semibold ${isWknd ? 'text-[var(--muted-foreground)]/50' : 'text-[var(--foreground)]'}`}>{day.getDate()}</span>}
                           </div>);
                         })}
@@ -131,10 +131,10 @@ export default function AdminScreen() {
                       const rowH = rows.length > 1 ? rows.length * 40 + 8 : 40;
                       return (<div key={member.id} className="flex border-b border-[var(--border)]/50 hover:bg-[var(--af-bg4)]/30">
                         <div className="w-[180px] min-w-[180px] flex items-center gap-2 px-3 border-r border-[var(--border)]" style={{ minHeight: rowH }}>
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-semibold flex-shrink-0 ${avatarColor(member.id)}`}>{getInitials(member.data?.name || '?')}</div>
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0 ${avatarColor(member.id)}`}>{getInitials(member.data?.name || '?')}</div>
                           <div className="min-w-0">
                             <div className="text-[11px] font-semibold truncate">{member.data?.name || 'Sin nombre'}</div>
-                            <div className="text-[9px] text-[var(--muted-foreground)]">{member.data?.role || 'Miembro'} · {member.tasks.length} tareas</div>
+                            <div className="text-[10px] text-[var(--muted-foreground)]">{member.data?.role || 'Miembro'} · {member.tasks.length} tareas</div>
                           </div>
                           {hasOverlap && <span className="ml-auto text-[10px] text-red-400">⚠</span>}
                         </div>
@@ -153,7 +153,7 @@ export default function AdminScreen() {
                             const top = rIdx * 40 + 4;
                             return (<div key={task.id} className="absolute h-[28px] rounded-md flex items-center gap-1 px-1.5 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg hover:z-30 z-10 overflow-hidden" style={{ left: `${pos.left}%`, width: `${pos.width}%`, top, backgroundColor: isOvlp ? getProjectColorLight(task.data.projectId) : pColor, border: isOvlp ? `1.5px solid ${pColor}` : 'none', color: isOvlp ? pColor : 'white' }} onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setAdminTooltipPos({ x: Math.min(r.left, window.innerWidth - 280), y: r.top }); setAdminTooltipTask(task); }} onMouseLeave={() => setAdminTooltipTask(null)}>
                               <div className="w-[3px] h-full flex-shrink-0 rounded-sm" style={{ backgroundColor: isOvlp ? pColor : 'rgba(255,255,255,0.3)' }} />
-                              <span className="text-[9px] font-medium truncate flex-1">{task.data.title}</span>
+                              <span className="text-[10px] font-medium truncate flex-1">{task.data.title}</span>
                             </div>);
                           }))}
                           {member.tasks.length === 0 && <div className="absolute inset-0 flex items-center justify-center text-[11px] text-[var(--muted-foreground)]/50 italic">Sin tareas</div>}
@@ -173,7 +173,7 @@ export default function AdminScreen() {
                 return (
                   /* Admin tooltip — hidden on mobile (touch has no hover) */
                   <div key={t.id} className="hidden md:block fixed z-[200] bg-[var(--foreground)] text-[var(--card)] rounded-lg p-3 text-[11px] max-w-[280px] shadow-xl pointer-events-none" style={{ left: adminTooltipPos.x, top: adminTooltipPos.y - 10, transform: 'translateY(-100%)' }}>
-                    <div className="flex gap-2"><span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold" style={{ backgroundColor: pc.bg + '33', color: pc.color }}>{pc.label}</span><span className="text-[9px] text-[var(--muted-foreground)]">{sc.label}</span></div>
+                    <div className="flex gap-2"><span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold" style={{ backgroundColor: pc.bg + '33', color: pc.color }}>{pc.label}</span><span className="text-[10px] text-[var(--muted-foreground)]">{sc.label}</span></div>
                     <div className="text-[12px] font-semibold mt-1">{t.data.title}</div>
                     {proj && <div className="text-[10px] text-[var(--muted-foreground)] mt-0.5">{proj.data.name}</div>}
                     <div className="flex gap-3 mt-1 text-[10px] text-[var(--muted-foreground)]">
@@ -192,7 +192,7 @@ export default function AdminScreen() {
                     const ovlTasks = m.tasks.filter((t: any) => findOverlaps(m.tasks).has(t.id));
                     return (<div key={m.id} className="bg-[var(--card)] rounded-lg p-3 border border-red-500/20">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-semibold ${avatarColor(m.id)}`}>{getInitials(m.data?.name || '?')}</div>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold ${avatarColor(m.id)}`}>{getInitials(m.data?.name || '?')}</div>
                         <span className="text-xs font-semibold">{m.data?.name}</span>
                         <span className="ml-auto text-[10px] text-red-400 font-semibold">{ovlTasks.length} traslape{ovlTasks.length > 1 ? 's' : ''}</span>
                       </div>
@@ -266,9 +266,9 @@ export default function AdminScreen() {
                       <div className="min-w-0"><div className="text-xs font-semibold truncate">{m.data?.name}</div><div className="text-[10px] text-[var(--muted-foreground)]">{m.data?.role || 'Miembro'}</div></div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
-                      <div><div className="text-sm font-bold text-blue-400">{mActive.length}</div><div className="text-[9px] text-[var(--muted-foreground)]">Activas</div></div>
-                      <div><div className="text-sm font-bold text-emerald-400">{mDone.length}</div><div className="text-[9px] text-[var(--muted-foreground)]">Hechas</div></div>
-                      <div><div className="text-sm font-bold">{pct}%</div><div className="text-[9px] text-[var(--muted-foreground)]">Completado</div></div>
+                      <div><div className="text-sm font-bold text-blue-400">{mActive.length}</div><div className="text-[10px] text-[var(--muted-foreground)]">Activas</div></div>
+                      <div><div className="text-sm font-bold text-emerald-400">{mDone.length}</div><div className="text-[10px] text-[var(--muted-foreground)]">Hechas</div></div>
+                      <div><div className="text-sm font-bold">{pct}%</div><div className="text-[10px] text-[var(--muted-foreground)]">Completado</div></div>
                     </div>
                   </div>);
                 })}
@@ -313,7 +313,7 @@ export default function AdminScreen() {
                     return (<div key={u.id} className="flex items-center gap-3 bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
                       <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold ${avatarColor(u.id)}`}>{getInitials(u.data?.name || '?')}</div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs font-semibold truncate">{u.data?.name}{u.id === authUser?.uid && <span className="text-[9px] text-[var(--muted-foreground)] ml-1">(Tú)</span>}</div>
+                        <div className="text-xs font-semibold truncate">{u.data?.name}{u.id === authUser?.uid && <span className="text-[10px] text-[var(--muted-foreground)] ml-1">(Tú)</span>}</div>
                         <div className="text-[10px] text-[var(--muted-foreground)] truncate">{u.data?.email}</div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -439,9 +439,9 @@ export default function AdminScreen() {
                         <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: sc.color }} />
                         <div className="flex-1 min-w-0">
                           <div className="text-[10px] font-medium truncate">{t.data.title}</div>
-                          {proj && <div className="text-[9px] text-[var(--muted-foreground)]">{proj.data.name}</div>}
+                          {proj && <div className="text-[10px] text-[var(--muted-foreground)]">{proj.data.name}</div>}
                         </div>
-                        <span className={`text-[9px] flex-shrink-0 ${isOverdue ? 'text-red-400 font-semibold' : 'text-[var(--muted-foreground)]'}`}>{t.data.dueDate ? fmtDate(t.data.dueDate) : ''}</span>
+                        <span className={`text-[10px] flex-shrink-0 ${isOverdue ? 'text-red-400 font-semibold' : 'text-[var(--muted-foreground)]'}`}>{t.data.dueDate ? fmtDate(t.data.dueDate) : ''}</span>
                       </div>);
                     })}
                     {mTasks.length > 4 && <div className="text-[10px] text-[var(--muted-foreground)] text-center pt-1">+{mTasks.length - 4} más</div>}

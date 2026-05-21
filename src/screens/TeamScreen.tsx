@@ -103,9 +103,9 @@ export default function TeamScreen() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[14px] font-semibold">{user.data.name}</span>
-                    {isMe && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--af-accent)]/10 text-[var(--af-accent)]">Tú</span>}
-                    <span className={`text-[9px] px-2 py-0.5 rounded-full border ${ROLE_COLORS[role]}`}>{ROLE_ICONS[role]} {role}</span>
-                    {userCompName && <span className="text-[9px] px-2 py-0.5 rounded-full bg-[var(--af-bg4)] text-[var(--af-text3)]">🏢 {userCompName}</span>}
+                    {isMe && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--af-accent)]/10 text-[var(--af-accent)]">Tú</span>}
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${ROLE_COLORS[role]}`}>{ROLE_ICONS[role]} {role}</span>
+                    {userCompName && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--af-bg4)] text-[var(--af-text3)]">🏢 {userCompName}</span>}
                   </div>
                   <div className="text-[11px] text-[var(--muted-foreground)] truncate">{user.data.email}</div>
                   <div className="flex items-center gap-3 mt-1.5">

@@ -18,20 +18,20 @@ export default function MarketingPage() {
       {/* Hero Section */}
       <header className="relative px-6 py-20 md:py-32 max-w-6xl mx-auto text-center">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] rounded-full bg-[#c8a96e]/5 blur-[120px]" />
+          <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] rounded-full bg-[#d4b87a]/5 blur-[120px]" />
           <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-[#5b9bd5]/3 blur-[100px]" />
         </div>
 
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#c8a96e]/20 bg-[#c8a96e]/5 mb-8">
-            <span className="w-2 h-2 rounded-full bg-[#c8a96e] animate-pulse" />
-            <span className="text-[13px] text-[#c8a96e] font-medium">Beta abierta</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#d4b87a]/20 bg-[#d4b87a]/5 mb-8">
+            <span className="w-2 h-2 rounded-full bg-[#d4b87a] animate-pulse" />
+            <span className="text-[13px] text-[#d4b87a] font-medium">Beta abierta</span>
           </div>
 
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>
             Gestiona tus obras
             <br />
-            <span className="bg-gradient-to-r from-[#c8a96e] via-[#e2c898] to-[#c8a96e] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#d4b87a] via-[#e2c898] to-[#d4b87a] bg-clip-text text-transparent">
               con inteligencia
             </span>
           </h1>
@@ -44,7 +44,7 @@ export default function MarketingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
               href="/"
-              className="px-8 py-4 rounded-2xl bg-gradient-to-r from-[#c8a96e] to-[#e2c898] text-[#0e0f11] text-base font-semibold hover:shadow-lg hover:shadow-[#c8a96e]/25 transition-all hover:-translate-y-0.5"
+              className="px-8 py-4 rounded-2xl bg-gradient-to-r from-[#d4b87a] to-[#e2c898] text-[#0e0f11] text-base font-semibold hover:shadow-lg hover:shadow-[#d4b87a]/25 transition-all hover:-translate-y-0.5"
             >
               Comenzar gratis
             </a>
@@ -70,7 +70,7 @@ export default function MarketingPage() {
             { value: '50+', label: 'Servicios' },
           ].map(stat => (
             <div key={stat.label}>
-              <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#c8a96e] to-[#e2c898] bg-clip-text text-transparent mb-1">
+              <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#d4b87a] to-[#e2c898] bg-clip-text text-transparent mb-1">
                 {stat.value}
               </div>
               <div className="text-sm text-[#9a9b9e]">{stat.label}</div>
@@ -99,10 +99,10 @@ export default function MarketingPage() {
           ].map(f => (
             <div
               key={f.title}
-              className="p-6 rounded-2xl border border-[#252830] bg-[#16181c] hover:border-[#c8a96e]/20 transition-all group"
+              className="p-6 rounded-2xl border border-[#252830] bg-[#16181c] hover:border-[#d4b87a]/20 transition-all group"
             >
               <div className="text-2xl mb-3">{f.icon}</div>
-              <h3 className="text-base font-semibold mb-2 group-hover:text-[#c8a96e] transition-colors">{f.title}</h3>
+              <h3 className="text-base font-semibold mb-2 group-hover:text-[#d4b87a] transition-colors">{f.title}</h3>
               <p className="text-sm text-[#9a9b9e] leading-relaxed">{f.desc}</p>
             </div>
           ))}
@@ -123,7 +123,7 @@ export default function MarketingPage() {
             ].map(tech => (
               <span
                 key={tech}
-                className="px-4 py-2 rounded-xl bg-[#16181c] border border-[#252830] text-sm text-[#9a9b9e] hover:border-[#c8a96e]/30 hover:text-[#c8a96e] transition-all cursor-default"
+                className="px-4 py-2 rounded-xl bg-[#16181c] border border-[#252830] text-sm text-[#9a9b9e] hover:border-[#d4b87a]/30 hover:text-[#d4b87a] transition-all cursor-default"
               >
                 {tech}
               </span>
@@ -134,7 +134,7 @@ export default function MarketingPage() {
 
       {/* CTA */}
       <section className="px-6 py-20">
-        <div className="max-w-2xl mx-auto text-center p-10 rounded-3xl border border-[#c8a96e]/20 bg-gradient-to-b from-[#c8a96e]/5 to-transparent">
+        <div className="max-w-2xl mx-auto text-center p-10 rounded-3xl border border-[#d4b87a]/20 bg-gradient-to-b from-[#d4b87a]/5 to-transparent">
           <h2 className="text-2xl md:text-3xl font-bold mb-4" style={{ fontFamily: "'DM Serif Display', serif" }}>
             Empieza a gestionar tus obras hoy
           </h2>
@@ -143,7 +143,7 @@ export default function MarketingPage() {
           </p>
           <a
             href="/"
-            className="inline-block px-8 py-4 rounded-2xl bg-gradient-to-r from-[#c8a96e] to-[#e2c898] text-[#0e0f11] text-base font-semibold hover:shadow-lg hover:shadow-[#c8a96e]/25 transition-all"
+            className="inline-block px-8 py-4 rounded-2xl bg-gradient-to-r from-[#d4b87a] to-[#e2c898] text-[#0e0f11] text-base font-semibold hover:shadow-lg hover:shadow-[#d4b87a]/25 transition-all"
           >
             Ir a la app
           </a>

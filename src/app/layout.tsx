@@ -48,11 +48,10 @@ export const viewport: Viewport = {
 };
 
 /* ── Firebase SDK URLs ── */
-const FB_VERSION = "11.2.0";
-const FB_APP = `https://www.gstatic.com/firebasejs/${FB_VERSION}/firebase-app-compat.js`;
-const FB_AUTH = `https://www.gstatic.com/firebasejs/${FB_VERSION}/firebase-auth-compat.js`;
-const FB_FS = `https://www.gstatic.com/firebasejs/${FB_VERSION}/firebase-firestore-compat.js`;
-const FB_STORAGE = `https://www.gstatic.com/firebasejs/${FB_VERSION}/firebase-storage-compat.js`;
+const FB_APP = "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js";
+const FB_AUTH = "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js";
+const FB_FS = "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js";
+const FB_STORAGE = "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js";
 
 export default function RootLayout({
   children,

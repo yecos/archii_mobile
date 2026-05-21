@@ -82,7 +82,7 @@ function AssigneeAvatars({ task, getUserName, size = 'sm' }: { task: Task; getUs
         {ids.slice(0, 3).map((uid: string) => (
           <span
             key={uid}
-            className={`${isSmall ? 'w-4 h-4 text-[7px]' : 'w-5 h-5 text-[8px]'} rounded-full font-semibold flex items-center justify-center ring-1 ring-[var(--card)] ${avatarColor(uid)}`}
+            className={`${isSmall ? 'w-4 h-4 text-[7px]' : 'w-5 h-5 text-[9px]'} rounded-full font-semibold flex items-center justify-center ring-1 ring-[var(--card)] ${avatarColor(uid)}`}
             title={getUserName(uid)}
           >
             {getInitials(getUserName(uid))}
@@ -634,7 +634,7 @@ export default function TasksScreen() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--af-bg4)" vertical={false} />
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
-                <Tooltip content={<ChartTooltipContent />} cursor={{ fill: 'rgba(200,169,110,0.06)' }} />
+                <Tooltip content={<ChartTooltipContent />} cursor={{ fill: 'rgba(212,184,122,0.06)' }} />
                 <Bar dataKey="creadas" name="Creadas" fill="#3b82f6" radius={[3, 3, 0, 0]} barSize={16} />
                 <Bar dataKey="completadas" name="Completadas" fill="#10b981" radius={[3, 3, 0, 0]} barSize={16} />
               </BarChart>
@@ -744,7 +744,7 @@ export default function TasksScreen() {
                                 <div className="flex-1 h-1 bg-[var(--af-bg4)] rounded-full overflow-hidden">
                                   <div className={`h-full rounded-full transition-all ${pct === 100 ? 'bg-emerald-500' : 'bg-[var(--af-accent)]'}`} style={{ width: pct + '%' }} />
                                 </div>
-                                <span className="text-[9px] text-[var(--af-text3)] flex-shrink-0">{done}/{sts.length} subtareas</span>
+                                <span className="text-[10px] text-[var(--af-text3)] flex-shrink-0">{done}/{sts.length} subtareas</span>
                               </div>
                             );
                           })()}
@@ -901,7 +901,7 @@ export default function TasksScreen() {
                                 </span>
                               )}
                               {t.data.agendaMeta && (
-                                <span className="inline-flex items-center gap-1 text-[9px] px-1 py-0.5 rounded bg-[var(--af-accent)]/5 text-[var(--af-accent)]/60 font-medium">
+                                <span className="inline-flex items-center gap-1 text-[10px] px-1 py-0.5 rounded bg-[var(--af-accent)]/5 text-[var(--af-accent)]/60 font-medium">
                                   <CalendarDays className="w-2 h-2" aria-hidden="true"/>
                                   Agenda
                                 </span>
@@ -1118,7 +1118,7 @@ export default function TasksScreen() {
                               const done = sts.filter(s => s.done).length;
                               const pct = Math.round((done / sts.length) * 100);
                               return (
-                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${pct === 100 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-[var(--af-accent)]/10 text-[var(--af-accent)]'}`}>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${pct === 100 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-[var(--af-accent)]/10 text-[var(--af-accent)]'}`}>
                                   {done}/{sts.length}
                                 </span>
                               );
@@ -1127,12 +1127,12 @@ export default function TasksScreen() {
                             {tTags.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1.5">
                                 {tTags.slice(0, 2).map((tag: string) => (
-                                  <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-400">
+                                  <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-400">
                                     {tag}
                                   </span>
                                 ))}
                                 {tTags.length > 2 && (
-                                  <span className="text-[9px] px-1 py-0.5 rounded-full bg-[var(--af-bg4)] text-[var(--muted-foreground)]">+{tTags.length - 2}</span>
+                                  <span className="text-[10px] px-1 py-0.5 rounded-full bg-[var(--af-bg4)] text-[var(--muted-foreground)]">+{tTags.length - 2}</span>
                                 )}
                               </div>
                             )}

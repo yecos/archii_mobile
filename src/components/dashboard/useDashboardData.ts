@@ -10,7 +10,7 @@ import { toDate } from '@/lib/types';
 import { getWeekDates, agendaDateKey } from './agenda-helpers';
 import { isOverdue as checkOverdue } from '@/lib/kanban-helpers';
 
-export const CHART_COLORS = ['#c8a96e', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6', '#ec4899'];
+export const CHART_COLORS = ['#d4b87a', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6', '#ec4899'];
 
 export function useDashboardData() {
   const {

@@ -2,6 +2,7 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useApp } from '@/contexts/AppContext';
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 import { useNotificationsContext } from '@/hooks/useNotifications';
 import { useInventoryContext } from '@/hooks/useInventory';
 import { Toaster } from 'sonner';
@@ -99,6 +100,8 @@ function AppContent() {
     inAppNotifs, setInAppNotifs, markNotifRead,
   } = useNotificationsContext();
   const { invLowStock } = useInventoryContext();
+  const reduced = useMotionPreference();
+  const instant = { duration: 0 };
 
   if (!ready || loading) return <LoadingScreen />;
   if (!authUser) return (
@@ -244,10 +247,10 @@ function AppContent() {
           <AnimatePresence mode="wait">
             <motion.div
               key={screen}
-              initial={{ opacity: 0, y: 12 }}
+              initial={reduced ? false : { opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2, ease: 'easeInOut' }}
+              exit={reduced ? { opacity: 0 } : { opacity: 0, y: -8 }}
+              transition={reduced ? instant : { duration: 0.2, ease: 'easeInOut' }}
               className="flex-1 flex flex-col min-h-0"
             >
               <ErrorBoundary>

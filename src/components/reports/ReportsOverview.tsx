@@ -128,7 +128,7 @@ export default function ReportsOverview({ projects, tasks, expenses, timeEntries
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => v >= 1000000 ? `${(v/1000000).toFixed(0)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(v)} />
                 <Tooltip content={<ChartTooltip />} />
-                <Line type="monotone" dataKey="gastos" name="Gastos" stroke="#c8a96e" strokeWidth={2} dot={{ r: 3, fill: '#c8a96e' }} />
+                <Line type="monotone" dataKey="gastos" name="Gastos" stroke="#d4b87a" strokeWidth={2} dot={{ r: 3, fill: '#d4b87a' }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (

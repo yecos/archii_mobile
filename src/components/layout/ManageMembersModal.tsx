@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getFirebaseIdToken } from '@/lib/firebase-service';
 import { getInitials } from '@/lib/helpers';
 import { SkeletonListItem } from '@/components/ui/SkeletonLoaders';
@@ -161,16 +161,50 @@ export default function ManageMembersModal({ tenantId, tenantName, onClose, canR
     `${u.name} ${u.email}`.toLowerCase().includes(searchAvailable.toLowerCase())
   );
 
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap: keep Tab within modal
+  useEffect(() => {
+    const el = modalRef.current;
+    if (!el) return;
+    const focusable = el.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+      else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
+    };
+    el.addEventListener('keydown', handleKeyDown);
+    first.focus();
+    return () => el.removeEventListener('keydown', handleKeyDown);
+  }, [tab, loading]);
+
+  // Close on Escape
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose} role="presentation">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="manage-members-title"
+        className="bg-[var(--card)] border border-[var(--border)] rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
           <div>
-            <h2 className="text-lg font-bold text-[var(--foreground)]">Gestionar Miembros</h2>
+            <h2 id="manage-members-title" className="text-lg font-bold text-[var(--foreground)]">Gestionar Miembros</h2>
             <p className="text-sm text-[var(--muted-foreground)]">{tenantName}</p>
           </div>
-          <button onClick={onClose} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xl p-1 cursor-pointer">✕</button>
+          <button onClick={onClose} aria-label="Cerrar modal" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xl p-1 cursor-pointer">✕</button>
         </div>
 
         {/* Tabs */}

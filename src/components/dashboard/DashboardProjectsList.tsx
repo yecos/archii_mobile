@@ -39,7 +39,7 @@ export default function DashboardProjectsList({
                 <div className="flex justify-between items-start mb-1.5">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusColor(d.status)}`}>{d.status || 'Concepto'}</span>
-                    {compName && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--af-bg4)] text-[var(--af-text3)]">{compName}</span>}
+                    {compName && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--af-bg4)] text-[var(--af-text3)]">{compName}</span>}
                   </div>
                   <div className="text-sm font-bold">{prog}%</div>
                 </div>

@@ -113,7 +113,7 @@ export default function TopBar() {
             <Building2 size={14} className="stroke-[var(--af-accent)]" aria-hidden="true"/>
             <span className="text-xs font-medium max-w-[80px] sm:max-w-[120px] truncate hidden xs:inline">{activeTenantName || 'Espacio'}</span>
             {activeTenantRole === 'Super Admin' && (
-              <span className="text-[8px] font-bold bg-gradient-to-r from-[var(--af-accent)] to-amber-500 text-background px-1 py-0.5 rounded hidden sm:inline-flex items-center gap-0.5 flex-shrink-0">
+              <span className="text-[9px] font-bold bg-gradient-to-r from-[var(--af-accent)] to-amber-500 text-background px-1 py-0.5 rounded hidden sm:inline-flex items-center gap-0.5 flex-shrink-0">
                 <Crown size={7} aria-hidden="true"/>
                 SA
               </span>

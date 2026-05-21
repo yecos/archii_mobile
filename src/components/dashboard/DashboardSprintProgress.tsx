@@ -20,7 +20,7 @@ export default function DashboardSprintProgress({
   const pct = rangeTasksLength > 0 ? (rangeCompletedTasks / rangeTasksLength) * 100 : 0;
   const strokeColor = rangeTasksLength > 0
     ? pct >= 80 ? '#10b981'
-    : pct >= 40 ? '#c8a96e'
+    : pct >= 40 ? '#d4b87a'
     : '#f59e0b'
     : 'var(--af-bg4)';
 
@@ -33,7 +33,7 @@ export default function DashboardSprintProgress({
         <div className="relative w-[90px] h-[90px]">
           <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
             <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--af-bg4)" strokeWidth="2.5" />
-            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={strokeColor} strokeWidth="2.5" strokeDasharray={`${rangeTasksLength > 0 ? pct.toFixed(1) : 0}, 100`} strokeLinecap="round" className="transition-all duration-700" style={{ filter: 'drop-shadow(0 0 6px rgba(200,169,110,0.3))' }} />
+            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={strokeColor} strokeWidth="2.5" strokeDasharray={`${rangeTasksLength > 0 ? pct.toFixed(1) : 0}, 100`} strokeLinecap="round" className="transition-all duration-700" style={{ filter: 'drop-shadow(0 0 6px rgba(212,184,122,0.3))' }} />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-[18px] font-bold">{rangeTasksLength > 0 ? Math.round(pct) : 0}%</span>
@@ -59,7 +59,7 @@ export default function DashboardSprintProgress({
       {taskStatusData.length > 0 && (
         <div className="flex flex-wrap gap-x-2.5 gap-y-1 mt-3 pt-3 border-t border-[var(--border)] justify-center">
           {taskStatusData.map((d: { name: string; value: number }, i: number) => (
-            <div key={i} className="flex items-center gap-1 text-[9px]">
+            <div key={i} className="flex items-center gap-1 text-[10px]">
               <div className="w-1.5 h-1.5 rounded-full" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
               <span className="text-[var(--muted-foreground)]">{d.name}</span>
               <span className="font-semibold">{d.value}</span>

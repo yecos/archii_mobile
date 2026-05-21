@@ -104,7 +104,7 @@ export default function KanbanCard({ card, onClick, getUserName, commentCount = 
         <div className="flex items-center gap-2 min-w-0">
           {card.assigneeId && (
             <div
-              className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold border flex-shrink-0 ${avatarColor(card.assigneeId)}`}
+              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold border flex-shrink-0 ${avatarColor(card.assigneeId)}`}
               title={userName}
             >
               {initials}

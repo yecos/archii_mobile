@@ -7,6 +7,7 @@ import {
   ClipboardCheck, Camera, DollarSign, Zap
 } from 'lucide-react';
 import { useOnboardingStore, type OnboardingStep } from '@/stores/onboarding-store';
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 
 /* ─── Step Configuration ─── */
 const STEPS: { id: OnboardingStep; title: string; subtitle: string; Icon: any; features: string[] }[] = [
@@ -105,6 +106,8 @@ const cardVariants = {
 export default function OnboardingWizard() {
   const { wizardActive, currentStep, nextStep, skipWizard } = useOnboardingStore();
   const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
+  const reduced = useMotionPreference();
+  const instant = { duration: 0 };
 
   const currentIdx = STEP_ORDER.indexOf(currentStep as OnboardingStep);
   const step = STEPS[currentIdx];
@@ -128,9 +131,10 @@ export default function OnboardingWizard() {
       <motion.div
         className="fixed inset-0 z-[200] flex items-center justify-center"
         variants={overlayVariants}
-        initial="hidden"
+        initial={reduced ? false : "hidden"}
         animate="visible"
-        exit="exit"
+        exit={reduced ? { opacity: 0 } : "exit"}
+        transition={reduced ? instant : undefined}
       >
         {/* Backdrop */}
         <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
@@ -148,18 +152,19 @@ export default function OnboardingWizard() {
               key={currentStep}
               custom={direction}
               variants={cardVariants}
-              initial="hidden"
+              initial={reduced ? false : "hidden"}
               animate="visible"
-              exit="exit"
+              exit={reduced ? { opacity: 0 } : "exit"}
+              transition={reduced ? instant : undefined}
               className="bg-[var(--card)] border border-[var(--border)] rounded-3xl shadow-2xl overflow-hidden"
             >
               {/* Progress bar */}
               <div className="h-1 bg-[var(--af-bg4)]">
                 <motion.div
                   className="h-full bg-gradient-to-r from-[var(--af-accent)] to-[var(--af-accent2)] rounded-r-full"
-                  initial={{ width: 0 }}
+                  initial={reduced ? false : { width: 0 }}
                   animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  transition={reduced ? instant : { duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                 />
               </div>
 
@@ -178,8 +183,8 @@ export default function OnboardingWizard() {
                 {/* Icon */}
                 <motion.div
                   className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-[var(--af-accent)]/15 to-[var(--af-accent2)]/8 border border-[var(--af-accent)]/20 flex items-center justify-center"
-                  animate={{ y: [0, -4, 0] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  animate={reduced ? {} : { y: [0, -4, 0] }}
+                  transition={reduced ? instant : { duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                 >
                   <step.Icon size={36} className="stroke-[var(--af-accent)]" strokeWidth={1.5} />
                 </motion.div>
@@ -204,9 +209,9 @@ export default function OnboardingWizard() {
                       <motion.div
                         key={i}
                         className="flex items-center gap-3 p-2.5 rounded-xl bg-[var(--af-bg3)]/50 hover:bg-[var(--af-bg3)] transition-colors"
-                        initial={{ opacity: 0, x: -10 }}
+                        initial={reduced ? false : { opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.07, duration: 0.3 }}
+                        transition={reduced ? instant : { delay: i * 0.07, duration: 0.3 }}
                       >
                         <div className="w-8 h-8 rounded-lg bg-[var(--af-accent)]/10 flex items-center justify-center flex-shrink-0">
                           <FeatureIcon size={14} className="stroke-[var(--af-accent)]" />

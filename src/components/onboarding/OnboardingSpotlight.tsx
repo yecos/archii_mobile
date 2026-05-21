@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lightbulb, ChevronRight } from 'lucide-react';
 import { useOnboardingStore, type SpotlightTip } from '@/stores/onboarding-store';
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 
 /* ─── Spotlight Tooltip ─── */
 function SpotlightTooltip({
@@ -18,6 +19,8 @@ function SpotlightTooltip({
   onNext: () => void;
   onNextAvailable: boolean;
 }) {
+  const reduced = useMotionPreference();
+  const instant = { duration: 0 };
   const [tooltipRect, setTooltipRect] = useState<DOMRect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ top: 0, left: 0 });
@@ -82,10 +85,10 @@ function SpotlightTooltip({
         ref={tooltipRef}
         className="fixed z-[152] w-72 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden"
         style={{ top: position.top, left: position.left }}
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={reduced ? false : { opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+        transition={reduced ? instant : { duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
       >
         {/* Header */}
         <div className="px-4 pt-3 pb-2 flex items-start justify-between">
@@ -135,6 +138,8 @@ function SpotlightTooltip({
 /* ─── Spotlight Provider ─── */
 export default function OnboardingSpotlight() {
   const { activeSpotlightId, spotlightTips, showSpotlight, dismissSpotlight, dismissAllSpotlights } = useOnboardingStore();
+  const reduced = useMotionPreference();
+  const instant = { duration: 0 };
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [updateTrigger, setUpdateTrigger] = useState(0);
 
@@ -218,10 +223,10 @@ export default function OnboardingSpotlight() {
       <AnimatePresence>
         <motion.div
           className="fixed inset-0 z-[150] pointer-events-auto"
-          initial={{ opacity: 0 }}
+          initial={reduced ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          exit={reduced ? { opacity: 0 } : { opacity: 0 }}
+          transition={reduced ? instant : { duration: 0.2 }}
         >
           <div className="absolute inset-0 bg-black/40" onClick={dismissAllSpotlights} />
           <SpotlightTooltip

@@ -84,15 +84,15 @@ export default function CalendarScreen() {
               <div className="grid grid-cols-3 gap-2 mb-4">
                 <div className="bg-red-500/10 rounded-lg p-2.5 text-center">
                   <div className="text-base font-bold text-red-400">{calTasks.filter(t => t.data.priority === 'Alta').length}</div>
-                  <div className="text-[9px] text-red-400/70">Urgentes</div>
+                  <div className="text-[10px] text-red-400/70">Urgentes</div>
                 </div>
                 <div className="bg-amber-500/10 rounded-lg p-2.5 text-center">
                   <div className="text-base font-bold text-amber-400">{calTasks.filter(t => { const d = t.data.dueDate; return d && checkOverdue(d); }).length}</div>
-                  <div className="text-[9px] text-amber-400/70">Vencidas</div>
+                  <div className="text-[10px] text-amber-400/70">Vencidas</div>
                 </div>
                 <div className="bg-blue-500/10 rounded-lg p-2.5 text-center">
                   <div className="text-base font-bold text-blue-400">{calTasks.filter(t => { const d = t.data.dueDate; if (!d) return false; const diff = Math.ceil((new Date(d).getTime() - today.getTime()) / 86400000); return diff >= 0 && diff <= 7; }).length}</div>
-                  <div className="text-[9px] text-blue-400/70">Esta semana</div>
+                  <div className="text-[10px] text-blue-400/70">Esta semana</div>
                 </div>
               </div>
 
@@ -123,16 +123,16 @@ export default function CalendarScreen() {
                             const proj = projects.find(p => p.id === t.data.projectId);
                             const isOverdue = checkOverdue(t.data.dueDate);
                             return (
-                              <div key={t.id} className={`text-[8px] sm:text-[9px] leading-tight px-1 py-0.5 rounded truncate ${t.data.priority === 'Alta' ? 'bg-red-500/15 text-red-400' : t.data.priority === 'Media' ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`} title={t.data.title}>
+                              <div key={t.id} className={`text-[9px] sm:text-[10px] leading-tight px-1 py-0.5 rounded truncate ${t.data.priority === 'Alta' ? 'bg-red-500/15 text-red-400' : t.data.priority === 'Media' ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`} title={t.data.title}>
                                 {isOverdue ? '⚡ ' : ''}{t.data.title}
                               </div>
                             );
                           })}
-                          {dayTasks.length > 3 && <div className="text-[8px] text-[var(--muted-foreground)] pl-1">+{dayTasks.length - 3} más</div>}
-                          {getRFIsForDay(day).slice(0, 2).map(r => <div key={r.id} className="text-[8px] sm:text-[9px] leading-tight px-1 py-0.5 rounded truncate bg-blue-500/15 text-blue-400" title={`❓ ${r.data.subject}`}>❓ {r.data.number}</div>)}
-                          {getSubsForDay(day).slice(0, 1).map(s => <div key={s.id} className="text-[8px] sm:text-[9px] leading-tight px-1 py-0.5 rounded truncate bg-purple-500/15 text-purple-400" title={`📋 ${s.data.title}`}>📋 {s.data.number}</div>)}
-                          {getPunchForDay(day).slice(0, 1).map(p => <div key={p.id} className="text-[8px] sm:text-[9px] leading-tight px-1 py-0.5 rounded truncate bg-teal-500/15 text-teal-400" title={`✅ ${p.data.title}`}>✅ {p.data.title}</div>)}
-                          {meetings.filter(m => m.data.date === dateStr).map(m => <div key={m.id} className={`text-[8px] sm:text-[9px] leading-tight px-1 py-0.5 rounded truncate ${m.data.recurring === 'weekly' ? 'bg-violet-500/20 text-violet-300' : 'bg-purple-500/15 text-purple-400'}`} title={`${m.data.recurring === 'weekly' ? '🔄' : '📅'} ${m.data.title} (${m.data.time})`}>{m.data.recurring === 'weekly' ? '🔄' : '📅'} {m.data.time}</div>)}
+                          {dayTasks.length > 3 && <div className="text-[10px] text-[var(--muted-foreground)] pl-1">+{dayTasks.length - 3} más</div>}
+                          {getRFIsForDay(day).slice(0, 2).map(r => <div key={r.id} className="text-[9px] sm:text-[10px] leading-tight px-1 py-0.5 rounded truncate bg-blue-500/15 text-blue-400" title={`❓ ${r.data.subject}`}>❓ {r.data.number}</div>)}
+                          {getSubsForDay(day).slice(0, 1).map(s => <div key={s.id} className="text-[9px] sm:text-[10px] leading-tight px-1 py-0.5 rounded truncate bg-purple-500/15 text-purple-400" title={`📋 ${s.data.title}`}>📋 {s.data.number}</div>)}
+                          {getPunchForDay(day).slice(0, 1).map(p => <div key={p.id} className="text-[9px] sm:text-[10px] leading-tight px-1 py-0.5 rounded truncate bg-teal-500/15 text-teal-400" title={`✅ ${p.data.title}`}>✅ {p.data.title}</div>)}
+                          {meetings.filter(m => m.data.date === dateStr).map(m => <div key={m.id} className={`text-[9px] sm:text-[10px] leading-tight px-1 py-0.5 rounded truncate ${m.data.recurring === 'weekly' ? 'bg-violet-500/20 text-violet-300' : 'bg-purple-500/15 text-purple-400'}`} title={`${m.data.recurring === 'weekly' ? '🔄' : '📅'} ${m.data.title} (${m.data.time})`}>{m.data.recurring === 'weekly' ? '🔄' : '📅'} {m.data.time}</div>)}
                         </div>
                       </div>
                     );
@@ -165,7 +165,7 @@ export default function CalendarScreen() {
                           <div key={t.id} className={`border rounded-lg p-3 ${isOverdue ? 'border-red-500/20 bg-red-500/5' : 'border-[var(--border)] bg-[var(--af-bg3)]'}`}>
                             <div className="flex items-start justify-between gap-2 mb-1">
                               <div className="text-[13px] font-medium">{t.data.title}</div>
-                              <span className={`text-[9px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${prioColor(t.data.priority)}`}>{t.data.priority}</span>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${prioColor(t.data.priority)}`}>{t.data.priority}</span>
                             </div>
                             <div className="flex items-center gap-3 text-[10px] text-[var(--af-text3)]">
                               {proj && <span>📁 {proj.data.name}</span>}
@@ -190,7 +190,7 @@ export default function CalendarScreen() {
                             <div key={r.id} className={`border rounded-lg p-3 ${isOverdue ? 'border-red-500/20 bg-red-500/5' : 'border-blue-500/20 bg-blue-500/5'}`}>
                               <div className="flex items-start justify-between gap-2 mb-1">
                                 <div className="text-[13px] font-medium">{r.data.number}: {r.data.subject}</div>
-                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${r.data.priority === 'Alta' ? 'bg-red-500/15 text-red-400' : r.data.priority === 'Media' ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}>{r.data.priority}</span>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${r.data.priority === 'Alta' ? 'bg-red-500/15 text-red-400' : r.data.priority === 'Media' ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}>{r.data.priority}</span>
                               </div>
                               <div className="flex items-center gap-3 text-[10px] text-[var(--af-text3)]">
                                 {rfiProj && <span>📁 {rfiProj.data.name}</span>}

@@ -976,10 +976,10 @@ export default function WeeklyAgendaScreen() {
                 {/* Day header */}
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <div className="text-base font-bold" style={{ color: 'var(--foreground)' }}>
+                    <div className="text-base font-bold text-[var(--foreground)]">
                       {DAY_FULL[mobileDayIdx]}
                     </div>
-                    <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                    <div className="text-xs text-[var(--muted-foreground)]">
                       {fmtDay(d)} {isToday && <span className="ml-1 px-1.5 py-0.5 rounded text-[9px] font-semibold" style={{ background: 'var(--primary)', color: 'var(--primary-foreground)' }}>Hoy</span>}
                     </div>
                   </div>
@@ -997,7 +997,7 @@ export default function WeeklyAgendaScreen() {
                 {dayTasks.length === 0 && (
                   <div className="text-center py-12">
                     <CalendarDays className="w-10 h-10 mx-auto mb-2" style={{ color: 'var(--muted-foreground)', opacity: 0.4 }} aria-hidden="true"/>
-                    <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Sin actividades este d\u00eda</p>
+                    <p className="text-sm text-[var(--muted-foreground)]">Sin actividades este d\u00eda</p>
                     <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)', opacity: 0.7 }}>Toca el bot\u00f3n + para crear una</p>
                   </div>
                 )}
@@ -1028,17 +1028,17 @@ export default function WeeklyAgendaScreen() {
                               {/* Title row */}
                               <div className="flex items-center gap-1.5 mb-1">
                                 {STATUS_ICON[task.data.status]}
-                                <span className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
+                                <span className="text-sm font-semibold truncate text-[var(--foreground)]">
                                   {task.data.title}
                                 </span>
                               </div>
                               {/* Time + priority */}
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--muted-foreground)' }}>
+                                <span className="flex items-center gap-1 text-[11px] text-[var(--muted-foreground)]">
                                   <Clock className="w-3 h-3" aria-hidden="true"/>
                                   {formatHourRange(meta.hourSlots)}
                                 </span>
-                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${pc.text}`} style={{ background: 'var(--af-bg3)' }}>
+                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${pc.text} bg-[var(--af-bg3)]`}>
                                   {task.data.priority}
                                 </span>
                               </div>
@@ -1057,7 +1057,7 @@ export default function WeeklyAgendaScreen() {
 
                         {/* Card details (project, assignee, subtasks) */}
                         {(task.data.projectId || task.data.assigneeId || totalSubtasks > 0 || meta.participantIds.length > 0) && (
-                          <div className="px-3 pb-2.5 pt-0 flex flex-wrap gap-x-3 gap-y-1 text-[11px]" style={{ color: 'var(--muted-foreground)' }}>
+                          <div className="px-3 pb-2.5 pt-0 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-[var(--muted-foreground)]">
                             {task.data.projectId && (
                               <span className="flex items-center gap-1">
                                 <FolderOpen className="w-3 h-3" aria-hidden="true"/>
@@ -1092,7 +1092,7 @@ export default function WeeklyAgendaScreen() {
                 {/* Quick hour slots — tap to create at specific time */}
                 {dayTasks.length > 0 && (
                   <div className="mt-4 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider mb-2 no-print" style={{ color: 'var(--muted-foreground)' }}>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider mb-2 no-print text-[var(--muted-foreground)]">
                       Crear en hora...
                     </p>
                     <div className="flex flex-wrap gap-1.5 no-print">
@@ -1290,11 +1290,11 @@ export default function WeeklyAgendaScreen() {
                               {!isNarrow && (
                                 <div className="flex items-center gap-1 mt-0.5" style={{ fontSize: '9px' }}>
                                   {STATUS_ICON[task.data.status]}
-                                  <span className="truncate" style={{ color: 'var(--muted-foreground)' }}>
+                                  <span className="truncate text-[var(--muted-foreground)]">
                                     {userMap[task.data.assigneeId]?.name || ''}
                                   </span>
                                   {!isMedium && meta.participantIds.length > 0 && (
-                                    <span className="flex items-center gap-0.5 ml-1" style={{ color: 'var(--muted-foreground)' }}>
+                                    <span className="flex items-center gap-0.5 ml-1 text-[var(--muted-foreground)]">
                                       <Users className="w-2.5 h-2.5" aria-hidden="true"/>
                                       {meta.participantIds.length}
                                     </span>
@@ -1370,8 +1370,7 @@ export default function WeeklyAgendaScreen() {
                   value={note.text}
                   onChange={e => updateNote(note.id, e.target.value)}
                   placeholder="Escribe una nota..."
-                  className="w-full bg-transparent text-xs resize-none outline-none placeholder:text-[var(--muted-foreground)] min-h-[60px]"
-                  style={{ color: 'var(--foreground)' }}
+                  className="w-full bg-transparent text-xs resize-none outline-none placeholder:text-[var(--muted-foreground)] min-h-[60px] text-[var(--foreground)]"
                   rows={3}
                 />
                 <button
@@ -1434,7 +1433,7 @@ export default function WeeklyAgendaScreen() {
                 </div>
               </div>
               {taskToDelete && (
-                <p className="text-xs mb-4 px-1" style={{ color: 'var(--foreground)' }}>
+                <p className="text-xs mb-4 px-1 text-[var(--foreground)]">
                   <strong>{taskToDelete.data.title}</strong>
                 </p>
               )}
@@ -1470,9 +1469,9 @@ export default function WeeklyAgendaScreen() {
             <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--border)]">
               <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--primary)', opacity: 0.12 }}>
                 {editingTask ? (
-                  <Edit3 className="w-4 h-4" style={{ color: 'var(--primary)' }} aria-hidden="true"/>
+                  <Edit3 className="w-4 h-4 text-[var(--primary)]" aria-hidden="true"/>
                 ) : (
-                  <Plus className="w-4 h-4" style={{ color: 'var(--primary)' }} aria-hidden="true"/>
+                  <Plus className="w-4 h-4 text-[var(--primary)]" aria-hidden="true"/>
                 )}
               </div>
               <div>
@@ -1541,8 +1540,7 @@ export default function WeeklyAgendaScreen() {
                       value={form.title}
                       onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                       placeholder="Nombre de la actividad"
-                      className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
-                      style={{ color: 'var(--foreground)' }}
+                      className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 text-[var(--foreground)]"
                       autoFocus
                     />
                   </div>
@@ -1553,8 +1551,7 @@ export default function WeeklyAgendaScreen() {
                       <FolderOpen className="w-3 h-3" aria-hidden="true"/> Proyecto
                     </label>
                     <select value={form.projectId} onChange={e => setForm(f => ({ ...f, projectId: e.target.value }))}
-                      className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none"
-                      style={{ color: 'var(--foreground)' }}>
+                      className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none text-[var(--foreground)]">
                       <option value="">Sin proyecto</option>
                       {projects.map(p => <option key={p.id} value={p.id}>{p.data.name}</option>)}
                     </select>
@@ -1566,8 +1563,7 @@ export default function WeeklyAgendaScreen() {
                       <User className="w-3 h-3" aria-hidden="true"/> Responsable
                     </label>
                     <select value={form.assigneeId} onChange={e => setForm(f => ({ ...f, assigneeId: e.target.value }))}
-                      className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none"
-                      style={{ color: 'var(--foreground)' }}>
+                      className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none text-[var(--foreground)]">
                       <option value="">Sin asignar</option>
                       {allUserOptions.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                     </select>
@@ -1619,8 +1615,7 @@ export default function WeeklyAgendaScreen() {
                         <Flag className="w-3 h-3" aria-hidden="true"/> Prioridad
                       </label>
                       <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}
-                        className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none"
-                        style={{ color: 'var(--foreground)' }}>
+                        className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none text-[var(--foreground)]">
                         {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
                       </select>
                     </div>
@@ -1629,8 +1624,7 @@ export default function WeeklyAgendaScreen() {
                         <CheckCircle2 className="w-3 h-3" aria-hidden="true"/> Estado
                       </label>
                       <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
-                        className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none"
-                        style={{ color: 'var(--foreground)' }}>
+                        className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none text-[var(--foreground)]">
                         {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     </div>
@@ -1645,8 +1639,7 @@ export default function WeeklyAgendaScreen() {
                       value={form.observations}
                       onChange={e => setForm(f => ({ ...f, observations: e.target.value }))}
                       placeholder="Notas adicionales..."
-                      className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 resize-none"
-                      style={{ color: 'var(--foreground)' }}
+                      className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 resize-none text-[var(--foreground)]"
                       rows={2}
                     />
                   </div>
@@ -1678,8 +1671,7 @@ export default function WeeklyAgendaScreen() {
                           onChange={e => {
                             if (e.target.value) addHourToForm(Number(e.target.value));
                           }}
-                          className="text-[10px] px-2 py-1 rounded-md border border-dashed border-[var(--border)] bg-[var(--af-bg3)] outline-none cursor-pointer"
-                          style={{ color: 'var(--muted-foreground)' }}
+                          className="text-[10px] px-2 py-1 rounded-md border border-dashed border-[var(--border)] bg-[var(--af-bg3)] outline-none cursor-pointer text-[var(--muted-foreground)]"
                         >
                           <option value="">+ Agregar hora</option>
                           {HOURS.filter(h => !form.hours.includes(h)).map(h => (
@@ -1747,8 +1739,7 @@ export default function WeeklyAgendaScreen() {
                       <FolderOpen className="w-3 h-3" aria-hidden="true"/> Filtrar por proyecto
                     </label>
                     <select value={linkFilterProject} onChange={e => setLinkFilterProject(e.target.value)}
-                      className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none"
-                      style={{ color: 'var(--foreground)' }}>
+                      className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none text-[var(--foreground)]">
                       <option value="">Todos los proyectos</option>
                       {projects.map(p => <option key={p.id} value={p.id}>{p.data.name}</option>)}
                     </select>
@@ -1764,13 +1755,12 @@ export default function WeeklyAgendaScreen() {
                       value={linkSearch}
                       onChange={e => setLinkSearch(e.target.value)}
                       placeholder="Buscar por titulo o proyecto..."
-                      className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
-                      style={{ color: 'var(--foreground)' }}
+                      className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--input)] px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 text-[var(--foreground)]"
                     />
                   </div>
 
                   {/* Task list */}
-                  <div className="max-h-40 overflow-y-auto rounded-lg border border-[var(--border)]" style={{ background: 'var(--af-bg3)' }}>
+                  <div className="max-h-40 overflow-y-auto rounded-lg border border-[var(--border)] bg-[var(--af-bg3)]">
                     {linkableTasks.length === 0 ? (
                       <div className="text-center py-4">
                         <p className="text-[10px] text-[var(--muted-foreground)]">No hay tareas disponibles para vincular</p>
@@ -1805,20 +1795,20 @@ export default function WeeklyAgendaScreen() {
                           >
                             <span className={`w-2 h-2 rounded-full ${pc.dot} flex-shrink-0`} />
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>{t.data.title}</p>
-                              <p className="text-[9px] truncate" style={{ color: 'var(--muted-foreground)' }}>
+                              <p className="text-xs font-medium truncate text-[var(--foreground)]">{t.data.title}</p>
+                              <p className="text-[9px] truncate text-[var(--muted-foreground)]">
                                 {projectMap[t.data.projectId] || 'Sin proyecto'} &middot; {userMap[t.data.assigneeId]?.name || 'Sin asignar'}
                               </p>
                             </div>
                             {isSelected && (
-                              <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--primary)' }} aria-hidden="true"/>
+                              <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-[var(--primary)]" aria-hidden="true"/>
                             )}
                           </button>
                         );
                       })
                     )}
                     {linkableTasks.length > 20 && (
-                      <p className="text-[9px] text-center py-1" style={{ color: 'var(--muted-foreground)' }}>
+                      <p className="text-[9px] text-center py-1 text-[var(--muted-foreground)]">
                         Mostrando 20 de {linkableTasks.length} tareas
                       </p>
                     )}
@@ -1831,14 +1821,14 @@ export default function WeeklyAgendaScreen() {
                     const pc = PRIO_COLORS[selTask.data.priority] || PRIO_COLORS['Media'];
                     return (
                       <div className={`rounded-lg p-3 ${pc.bg} border-l-4 ${pc.border}`}>
-                        <p className="text-xs font-semibold mb-1" style={{ color: 'var(--foreground)' }}>{selTask.data.title}</p>
-                        <div className="flex items-center gap-3 text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+                        <p className="text-xs font-semibold mb-1 text-[var(--foreground)]">{selTask.data.title}</p>
+                        <div className="flex items-center gap-3 text-[10px] text-[var(--muted-foreground)]">
                           <span className="flex items-center gap-1"><FolderOpen className="w-2.5 h-2.5" aria-hidden="true"/>{projectMap[selTask.data.projectId] || 'Sin proyecto'}</span>
                           <span className="flex items-center gap-1"><User className="w-2.5 h-2.5" aria-hidden="true"/>{userMap[selTask.data.assigneeId]?.name || 'Sin asignar'}</span>
                           <span className={pc.text}>{selTask.data.priority}</span>
                         </div>
                         {((selTask.data.subtasks || [])).length > 0 && (
-                          <p className="text-[9px] mt-1" style={{ color: 'var(--muted-foreground)' }}>
+                          <p className="text-[9px] mt-1 text-[var(--muted-foreground)]">
                             Subtareas: {(selTask.data.subtasks || []).filter(s => s.done).length}/{(selTask.data.subtasks || []).length}
                           </p>
                         )}
@@ -1900,8 +1890,7 @@ export default function WeeklyAgendaScreen() {
                         onChange={e => {
                           if (e.target.value) addHourToForm(Number(e.target.value));
                         }}
-                        className="text-[10px] px-2 py-1 rounded-md border border-dashed border-[var(--border)] bg-[var(--af-bg3)] outline-none cursor-pointer"
-                        style={{ color: 'var(--muted-foreground)' }}
+                        className="text-[10px] px-2 py-1 rounded-md border border-dashed border-[var(--border)] bg-[var(--af-bg3)] outline-none cursor-pointer text-[var(--muted-foreground)]"
                       >
                         <option value="">+ Agregar hora</option>
                         {HOURS.filter(h => !form.hours.includes(h)).map(h => (

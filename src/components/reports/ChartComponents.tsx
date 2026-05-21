@@ -2,7 +2,7 @@
 import React from 'react';
 import { fmtCOP } from '@/lib/helpers';
 
-export const COLORS = ['#c8a96e', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4'];
+export const COLORS = ['#d4b87a', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4'];
 
 export function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;

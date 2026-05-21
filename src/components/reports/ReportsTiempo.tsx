@@ -56,7 +56,7 @@ export default function ReportsTiempo({ timeEntries, teamUsers, projects, dateLa
             <CartesianGrid strokeDasharray="3 3" stroke="var(--af-bg4)" horizontal={false} />
             <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} unit="h" />
             <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} width={90} />
-            <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(200,169,110,0.06)' }} />
+            <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(212,184,122,0.06)' }} />
             <Bar dataKey="horas" name="Horas" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={14} />
           </BarChart>
         </ResponsiveContainer>

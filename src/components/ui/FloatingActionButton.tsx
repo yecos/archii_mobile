@@ -32,7 +32,7 @@ export function FloatingActionButton({
       onClick={onClick}
       aria-label={ariaLabel}
     >
-      {icon || <Plus size={24} strokeWidth={2.5} />}
+      {icon || <Plus size={24} strokeWidth={2.5} aria-hidden="true" />}
     </button>
   );
 }

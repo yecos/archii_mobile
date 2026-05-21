@@ -113,7 +113,7 @@ export default function ProjectKPIs({
             </ResponsiveContainer>
             <div className="flex flex-col gap-0.5">
               {healthChartData.filter(d => d.value > 0).map((d: any) => (
-                <div key={d.name} className="flex items-center gap-1 text-[9px]">
+                <div key={d.name} className="flex items-center gap-1 text-[10px]">
                   <div className="w-1.5 h-1.5 rounded-full" style={{ background: d.color }} />
                   <span className="text-[var(--muted-foreground)]">{d.name}</span>
                   <span className="font-semibold">{d.value}</span>

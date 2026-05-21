@@ -202,12 +202,12 @@ function DashboardTab({ handleAction, showToast, setLoading }: { handleAction: a
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {stats.orphanUsers.map((u: any, i: number) => (
               <div key={i} className="flex items-center gap-2 bg-[var(--card)] rounded-lg p-2.5 border border-[var(--border)]">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-semibold ${avatarColor(u.uid)}`}>{getInitials(u.name)}</div>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold ${avatarColor(u.uid)}`}>{getInitials(u.name)}</div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium truncate">{u.name}</div>
                   <div className="text-[10px] text-[var(--muted-foreground)] truncate">{u.email}</div>
                 </div>
-                <span className="text-[9px] px-1.5 py-0.5 rounded-full border bg-[var(--af-bg3)] border-[var(--border)]">{u.role}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-[var(--af-bg3)] border-[var(--border)]">{u.role}</span>
               </div>
             ))}
           </div>
@@ -229,7 +229,7 @@ function DashboardTab({ handleAction, showToast, setLoading }: { handleAction: a
               </div>
               <div className="text-right flex-shrink-0">
                 <div className="text-sm font-bold">{t.memberCount}</div>
-                <div className="text-[9px] text-[var(--muted-foreground)]">miembros</div>
+                <div className="text-[10px] text-[var(--muted-foreground)]">miembros</div>
               </div>
             </div>
           ))}
@@ -471,7 +471,7 @@ function TenantsTab({ handleAction, showToast, switchTenant, setLoading }: { han
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {t.membersResolved.map((m: any, i: number) => (
                     <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-[var(--af-bg3)] border border-[var(--border)]">
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-semibold overflow-hidden flex-shrink-0 ${m.photoURL ? '' : avatarColor(m.uid)}`}>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden flex-shrink-0 ${m.photoURL ? '' : avatarColor(m.uid)}`}>
                         {m.photoURL ? <img src={m.photoURL} alt="" className="w-full h-full object-cover" /> : getInitials(m.name)}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -481,7 +481,7 @@ function TenantsTab({ handleAction, showToast, switchTenant, setLoading }: { han
                         </div>
                         <div className="text-[10px] text-[var(--muted-foreground)] truncate">{m.email}</div>
                       </div>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full border flex-shrink-0 ${ROLE_COLORS[m.role] || ROLE_COLORS['Miembro']}`}>{m.role}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border flex-shrink-0 ${ROLE_COLORS[m.role] || ROLE_COLORS['Miembro']}`}>{m.role}</span>
                     </div>
                   ))}
                 </div>
@@ -512,7 +512,7 @@ function TenantsTab({ handleAction, showToast, switchTenant, setLoading }: { han
                     {Object.entries(detailData.collectionStats || {}).filter(([_, v]) => (v as number) > 0).map(([key, val]) => (
                       <div key={key} className="bg-[var(--af-bg3)] rounded-lg p-2 text-center">
                         <div className="text-sm font-bold">{String(val)}</div>
-                        <div className="text-[9px] text-[var(--muted-foreground)]">{key}</div>
+                        <div className="text-[10px] text-[var(--muted-foreground)]">{key}</div>
                       </div>
                     ))}
                   </div>
@@ -530,7 +530,7 @@ function TenantsTab({ handleAction, showToast, switchTenant, setLoading }: { han
                             <div className="text-xs font-semibold truncate flex items-center gap-1">{m.name}{m.isCreator && <Crown size={10} className="text-amber-400" aria-hidden="true"/>}</div>
                             <div className="text-[10px] text-[var(--muted-foreground)] truncate">{m.email}</div>
                           </div>
-                          <span className={`text-[9px] px-2 py-0.5 rounded-full border ${ROLE_COLORS[m.role] || ROLE_COLORS['Miembro']}`}>{m.role}</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${ROLE_COLORS[m.role] || ROLE_COLORS['Miembro']}`}>{m.role}</span>
                         </div>
                       ))}
                     </div>
@@ -547,7 +547,7 @@ function TenantsTab({ handleAction, showToast, switchTenant, setLoading }: { han
                               <div className="text-xs font-medium truncate">{p.name}</div>
                               <div className="text-[10px] text-[var(--muted-foreground)]">{p.client} · {p.progress}%</div>
                             </div>
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--card)] border border-[var(--border)]">{p.status}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--card)] border border-[var(--border)]">{p.status}</span>
                           </div>
                         ))}
                       </div>
@@ -704,14 +704,14 @@ function UsersTab({ handleAction, showToast, setLoading }: { handleAction: any; 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold truncate">{u.name}</span>
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full border ${ROLE_COLORS[u.role] || ROLE_COLORS['Miembro']}`}>{ROLE_ICONS[u.role]} {u.role}</span>
-                  {ADMIN_EMAILS.includes(u.email) && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-semibold">SA</span>}
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${ROLE_COLORS[u.role] || ROLE_COLORS['Miembro']}`}>{ROLE_ICONS[u.role]} {u.role}</span>
+                  {ADMIN_EMAILS.includes(u.email) && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-semibold">SA</span>}
                 </div>
                 <div className="text-[10px] text-[var(--muted-foreground)] truncate">{u.email} · {u.tenantsCount} tenant{u.tenantsCount !== 1 ? 's' : ''}</div>
                 {u.tenants && u.tenants.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1">
                     {u.tenants.map((t: any, i: number) => (
-                      <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--card)] border border-[var(--border)]">
+                      <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--card)] border border-[var(--border)]">
                         {t.tenantName} ({t.role})
                       </span>
                     ))}

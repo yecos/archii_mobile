@@ -12,12 +12,12 @@ export default function Loading() {
         className="text-4xl sm:text-5xl font-bold tracking-tight mb-3"
         style={{
           fontFamily: "'DM Serif Display', serif",
-          color: 'var(--af-accent, #c8a96e)',
+          color: 'var(--af-accent, #d4b87a)',
         }}
       >
         Archii
       </h1>
-      <span className="text-xs font-bold tracking-wider uppercase mb-10 px-3 py-1 rounded-full" style={{ backgroundColor: 'rgba(200,169,110,0.12)', color: 'var(--af-accent, #c8a96e)' }}>
+      <span className="text-xs font-bold tracking-wider uppercase mb-10 px-3 py-1 rounded-full" style={{ backgroundColor: 'rgba(212,184,122,0.12)', color: 'var(--af-accent, #d4b87a)' }}>
         v2.0 Premium
       </span>
 
@@ -26,7 +26,7 @@ export default function Loading() {
         className="w-10 h-10 rounded-full animate-spin mb-5"
         style={{
           border: '3px solid var(--af-bg4, #252830)',
-          borderTopColor: 'var(--af-accent, #c8a96e)',
+          borderTopColor: 'var(--af-accent, #d4b87a)',
         }}
       />
 

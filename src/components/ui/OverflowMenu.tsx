@@ -47,7 +47,7 @@ export function OverflowMenu({
           )}
           aria-label="Más opciones"
         >
-          <MoreHorizontal size={16} />
+          <MoreHorizontal size={16} aria-hidden="true" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

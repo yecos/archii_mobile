@@ -11,7 +11,7 @@ import { isOverdue as checkOverdue } from './kanban-helpers';
 
 // Colores de marca Archii
 const BRAND = {
-  primary: [200, 169, 110] as [number, number, number], // #c8a96e (oro)
+  primary: [200, 169, 110] as [number, number, number], // #d4b87a (oro)
   dark: [26, 26, 32] as [number, number, number],       // #1a1a20
   text: [51, 51, 51] as [number, number, number],        // #333333
   muted: [130, 130, 130] as [number, number, number],    // #828282

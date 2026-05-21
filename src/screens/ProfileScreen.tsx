@@ -6,7 +6,7 @@ import { useOneDrive } from '@/hooks/useOneDrive';
 import { fmtCOP, fmtDate, prioColor, taskStColor, avatarColor } from '@/lib/helpers';
 import { isOverdue as checkOverdue } from '@/lib/kanban-helpers';
 import { ROLE_COLORS, ROLE_ICONS, MESES, DIAS_SEMANA, USER_ROLES, toDate } from '@/lib/types';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 
 type ProfileTab = 'resumen' | 'calendario' | 'actividad' | 'integraciones';
 
@@ -377,14 +377,14 @@ export default function ProfileScreen() {
             ) : (
               <div className="flex items-center gap-1.5">
                 <div style={{ fontFamily: "'DM Serif Display', serif" }} className="text-base sm:text-xl cursor-pointer hover:text-[var(--af-accent)] transition-colors" onClick={startEditName}>{userName}</div>
-                <button className="w-5 h-5 rounded flex items-center justify-center text-[10px] text-[var(--muted-foreground)] hover:text-[var(--af-accent)] hover:bg-[var(--af-accent)]/10 cursor-pointer transition-colors" onClick={startEditName} title="Editar nombre">✏️</button>
+                <button aria-label="Editar nombre" className="w-5 h-5 rounded flex items-center justify-center text-[10px] text-[var(--muted-foreground)] hover:text-[var(--af-accent)] hover:bg-[var(--af-accent)]/10 cursor-pointer transition-colors" onClick={startEditName} title="Editar nombre"><Pencil size={10} aria-hidden="true"/></button>
               </div>
             )}
             <div className="text-[11px] sm:text-sm text-[var(--muted-foreground)] truncate">{authUser?.email}</div>
             <div className="flex flex-wrap gap-1.5 mt-1.5">
-              <span className={`text-[9px] sm:text-[11px] px-2 py-0.5 rounded-full border ${ROLE_COLORS[effectiveRole]}`}>{ROLE_ICONS[effectiveRole]} {effectiveRole}</span>
-              <span className="text-[9px] sm:text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">{computed.myProjects.length} proyectos</span>
-              <span className="text-[9px] sm:text-[11px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">{computed.totalHours}h registradas</span>
+              <span className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full border ${ROLE_COLORS[effectiveRole]}`}>{ROLE_ICONS[effectiveRole]} {effectiveRole}</span>
+              <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">{computed.myProjects.length} proyectos</span>
+              <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">{computed.totalHours}h registradas</span>
             </div>
           </div>
 
@@ -468,7 +468,7 @@ export default function ProfileScreen() {
               <div className="relative w-20 h-20 sm:w-28 sm:h-28">
                 <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
                   <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--af-bg4)" strokeWidth="3" />
-                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={computed.totalRate >= 80 ? '#4caf7d' : computed.totalRate >= 50 ? '#c8a96e' : '#e05555'} strokeWidth="3" strokeDasharray={`${computed.totalRate}, 100`} strokeLinecap="round" className="transition-all duration-700" />
+                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={computed.totalRate >= 80 ? '#4caf7d' : computed.totalRate >= 50 ? '#d4b87a' : '#e05555'} strokeWidth="3" strokeDasharray={`${computed.totalRate}, 100`} strokeLinecap="round" className="transition-all duration-700" />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-lg sm:text-2xl font-bold">{computed.totalRate}%</span>
@@ -499,11 +499,11 @@ export default function ProfileScreen() {
               <div className="flex items-end gap-1.5 h-24">
                 {computed.weeklyData.map((d, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="text-[8px] sm:text-[10px] text-[var(--af-accent)] font-bold">{d.count}</div>
+                    <div className="text-[9px] sm:text-[10px] text-[var(--af-accent)] font-bold">{d.count}</div>
                     <div className="w-full bg-[var(--af-bg4)] rounded-full overflow-hidden flex-1 relative" style={{ minHeight: 16 }}>
                       <div className="absolute bottom-0 left-0 right-0 bg-[var(--af-accent)]/60 rounded-full transition-all duration-500" style={{ height: Math.max(Math.round((d.count / computed.weekMax) * 100), d.count > 0 ? 8 : 0) + '%' }} />
                     </div>
-                    <div className="text-[8px] sm:text-[9px] text-[var(--muted-foreground)]">{d.label}</div>
+                    <div className="text-[9px] sm:text-[10px] text-[var(--muted-foreground)]">{d.label}</div>
                   </div>
                 ))}
               </div>
@@ -593,16 +593,16 @@ export default function ProfileScreen() {
 
           {/* Mini stats */}
           <div className="grid grid-cols-4 gap-1.5 mb-3">
-            <div className="bg-red-500/10 rounded-lg p-2 text-center"><div className="text-sm font-bold text-red-400">{pcUrgent}</div><div className="text-[8px] text-red-400/70">Urgentes</div></div>
-            <div className="bg-amber-500/10 rounded-lg p-2 text-center"><div className="text-sm font-bold text-amber-400">{pcOverdue}</div><div className="text-[8px] text-amber-400/70">Vencidas</div></div>
-            <div className="bg-blue-500/10 rounded-lg p-2 text-center"><div className="text-sm font-bold text-blue-400">{pcThisWeek}</div><div className="text-[8px] text-blue-400/70">Esta semana</div></div>
-            <div className="bg-purple-500/10 rounded-lg p-2 text-center"><div className="text-sm font-bold text-purple-400">{pcMonthMeetings}</div><div className="text-[8px] text-purple-400/70">Reuniones</div></div>
+            <div className="bg-red-500/10 rounded-lg p-2 text-center"><div className="text-sm font-bold text-red-400">{pcUrgent}</div><div className="text-[10px] text-red-400/70">Urgentes</div></div>
+            <div className="bg-amber-500/10 rounded-lg p-2 text-center"><div className="text-sm font-bold text-amber-400">{pcOverdue}</div><div className="text-[10px] text-amber-400/70">Vencidas</div></div>
+            <div className="bg-blue-500/10 rounded-lg p-2 text-center"><div className="text-sm font-bold text-blue-400">{pcThisWeek}</div><div className="text-[10px] text-blue-400/70">Esta semana</div></div>
+            <div className="bg-purple-500/10 rounded-lg p-2 text-center"><div className="text-sm font-bold text-purple-400">{pcMonthMeetings}</div><div className="text-[10px] text-purple-400/70">Reuniones</div></div>
           </div>
 
           {/* Calendar Grid */}
           <div className="rounded-xl overflow-hidden border border-[var(--border)]">
             <div className="grid grid-cols-7 border-b border-[var(--border)] bg-[var(--af-bg3)]/50">
-              {DIAS_SEMANA.map(d => <div key={d} className="py-1.5 text-center text-[9px] sm:text-[10px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">{d}</div>)}
+              {DIAS_SEMANA.map(d => <div key={d} className="py-1.5 text-center text-[10px] sm:text-[10px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">{d}</div>)}
             </div>
             <div className="grid grid-cols-7">
               {pcCells.map((day, idx) => {
@@ -617,11 +617,11 @@ export default function ProfileScreen() {
                   <div key={day} className={`min-h-[52px] sm:min-h-[72px] border-b border-r border-[var(--border)] p-0.5 sm:p-1 cursor-pointer transition-colors ${isSelected ? 'bg-[var(--af-accent)]/10 ring-1 ring-inset ring-[var(--af-accent)]/30' : 'hover:bg-[var(--af-bg3)]'} ${isPast ? 'opacity-60' : ''}`} onClick={() => setPcSelected(ds)}>
                     <div className="flex items-center justify-between mb-0.5">
                       <div className={`text-[10px] sm:text-[12px] font-medium ${isToday ? 'w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[var(--af-accent)] text-background flex items-center justify-center' : 'text-[var(--foreground)]'}`}>{day}</div>
-                      {cnt > 0 && !isToday && <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[7px] sm:text-[8px] font-bold ${cnt > 4 ? 'bg-[var(--af-accent)] text-background' : 'bg-[var(--af-bg4)] text-[var(--muted-foreground)]'}`}>{cnt}</div>}
+                      {cnt > 0 && !isToday && <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[7px] sm:text-[9px] font-bold ${cnt > 4 ? 'bg-[var(--af-accent)] text-background' : 'bg-[var(--af-bg4)] text-[var(--muted-foreground)]'}`}>{cnt}</div>}
                       {isToday && cnt > 0 && <div className="w-1.5 h-1.5 rounded-full bg-[var(--af-accent)] animate-pulse" />}
                     </div>
                     <div className="space-y-px">
-                      {dayItems.slice(0, 2).map((item, i) => <div key={i} className={`text-[7px] sm:text-[8px] leading-tight px-0.5 py-px rounded truncate ${item.color}`} title={item.label}>{item.label}</div>)}
+                      {dayItems.slice(0, 2).map((item, i) => <div key={i} className={`text-[7px] sm:text-[9px] leading-tight px-0.5 py-px rounded truncate ${item.color}`} title={item.label}>{item.label}</div>)}
                       {cnt > 2 && <div className="text-[7px] text-[var(--muted-foreground)]">+{cnt - 2}</div>}
                     </div>
                   </div>
@@ -633,7 +633,7 @@ export default function ProfileScreen() {
           {/* Legend */}
           <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2.5 px-1">
             {[{ label: 'Tareas', color: 'bg-emerald-500/15 text-emerald-400' }, { label: 'RFIs', color: 'bg-blue-500/15 text-blue-400' }, { label: 'Reuniones', color: 'bg-purple-500/15 text-purple-400' }, { label: 'Punch', color: 'bg-teal-500/15 text-teal-400' }, { label: 'Submittals', color: 'bg-fuchsia-500/15 text-fuchsia-400' }].map((l, i) => (
-              <div key={i} className="flex items-center gap-1"><div className={`w-2 h-2 rounded-sm ${l.color}`} /><span className="text-[9px] text-[var(--muted-foreground)]">{l.label}</span></div>
+              <div key={i} className="flex items-center gap-1"><div className={`w-2 h-2 rounded-sm ${l.color}`} /><span className="text-[10px] text-[var(--muted-foreground)]">{l.label}</span></div>
             ))}
           </div>
 
@@ -649,7 +649,7 @@ export default function ProfileScreen() {
               ) : (
                 <div className="space-y-3 max-h-[400px] overflow-y-auto">
                   {selMeetings.length > 0 && <div><div className="text-[11px] font-semibold text-purple-400 mb-1.5">📅 Reuniones ({selMeetings.length})</div><div className="space-y-1.5">{selMeetings.sort((a, b) => (a.data.time || '').localeCompare(b.data.time || '')).map(m => { const proj = projects.find(p => p.id === m.data.projectId); return (<div key={m.id} className="border border-purple-500/20 rounded-lg p-2.5 bg-purple-500/5"><div className="flex items-start justify-between gap-2"><div className="text-[12px] font-medium">{m.data.title}</div><span className="text-[10px] text-purple-400 flex-shrink-0">{m.data.time || '09:00'} · {m.data.duration || 60}min</span></div>{proj && <div className="text-[10px] text-[var(--af-text3)] mt-1">📁 {proj.data.name}</div>}</div>); })}</div></div>}
-                  {selTasks.length > 0 && <div><div className="text-[11px] font-semibold mb-1.5">✅ Tareas ({selTasks.length})</div><div className="space-y-1.5">{selTasks.sort((a, b) => { const o: Record<string, number> = { Alta: 0, Media: 1, Baja: 2 }; return (o[a.data.priority] || 1) - (o[b.data.priority] || 1); }).map(t => { const proj = projects.find(p => p.id === t.data.projectId); const od = checkOverdue(t.data.dueDate); return (<div key={t.id} className={`border rounded-lg p-2.5 ${od ? 'border-red-500/20 bg-red-500/5' : 'border-[var(--border)] bg-[var(--af-bg3)]'}`}><div className="flex items-start justify-between gap-2"><div className="text-[12px] font-medium leading-snug">{od ? '⚡ ' : ''}{t.data.title}</div><span className={`text-[9px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${prioColor(t.data.priority)}`}>{t.data.priority}</span></div><div className="flex items-center gap-2 text-[10px] text-[var(--af-text3)] mt-1">{proj && <span>📁 {proj.data.name}</span>}<span className={`px-1.5 py-0.5 rounded-full ${taskStColor(t.data.status)}`}>{t.data.status}</span></div></div>); })}</div></div>}
+                  {selTasks.length > 0 && <div><div className="text-[11px] font-semibold mb-1.5">✅ Tareas ({selTasks.length})</div><div className="space-y-1.5">{selTasks.sort((a, b) => { const o: Record<string, number> = { Alta: 0, Media: 1, Baja: 2 }; return (o[a.data.priority] || 1) - (o[b.data.priority] || 1); }).map(t => { const proj = projects.find(p => p.id === t.data.projectId); const od = checkOverdue(t.data.dueDate); return (<div key={t.id} className={`border rounded-lg p-2.5 ${od ? 'border-red-500/20 bg-red-500/5' : 'border-[var(--border)] bg-[var(--af-bg3)]'}`}><div className="flex items-start justify-between gap-2"><div className="text-[12px] font-medium leading-snug">{od ? '⚡ ' : ''}{t.data.title}</div><span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${prioColor(t.data.priority)}`}>{t.data.priority}</span></div><div className="flex items-center gap-2 text-[10px] text-[var(--af-text3)] mt-1">{proj && <span>📁 {proj.data.name}</span>}<span className={`px-1.5 py-0.5 rounded-full ${taskStColor(t.data.status)}`}>{t.data.status}</span></div></div>); })}</div></div>}
                   {selRFIs.length > 0 && <div><div className="text-[11px] font-semibold text-blue-400 mb-1.5">❓ RFIs ({selRFIs.length})</div><div className="space-y-1.5">{selRFIs.map(r => { const proj = projects.find(p => p.id === r.data.projectId); return (<div key={r.id} className="border border-blue-500/20 rounded-lg p-2.5 bg-blue-500/5"><div className="text-[12px] font-medium">{r.data.number}: {r.data.subject}</div><div className="flex items-center gap-2 text-[10px] text-[var(--af-text3)] mt-1">{proj && <span>📁 {proj.data.name}</span>}<span className="text-blue-400">{r.data.status}</span></div></div>); })}</div></div>}
                   {selSubs.length > 0 && <div><div className="text-[11px] font-semibold text-fuchsia-400 mb-1.5">📋 Submittals ({selSubs.length})</div><div className="space-y-1.5">{selSubs.map(s => { const proj = projects.find(p => p.id === s.data.projectId); return (<div key={s.id} className="border border-fuchsia-500/20 rounded-lg p-2.5 bg-fuchsia-500/5"><div className="text-[12px] font-medium">{s.data.number}: {s.data.title}</div><div className="flex items-center gap-2 text-[10px] text-[var(--af-text3)] mt-1">{proj && <span>📁 {proj.data.name}</span>}<span className="text-fuchsia-400">{s.data.status}</span></div></div>); })}</div></div>}
                   {selPunch.length > 0 && <div><div className="text-[11px] font-semibold text-teal-400 mb-1.5">✅ Punch List ({selPunch.length})</div><div className="space-y-1.5">{selPunch.map(p => { const proj = projects.find(pr => pr.id === p.data.projectId); return (<div key={p.id} className="border border-teal-500/20 rounded-lg p-2.5 bg-teal-500/5"><div className="text-[12px] font-medium">{p.data.title}</div><div className="flex items-center gap-2 text-[10px] text-[var(--af-text3)] mt-1">{proj && <span>📁 {proj.data.name}</span>}<span className="text-teal-400">{p.data.status}</span></div></div>); })}</div></div>}
@@ -724,7 +724,7 @@ export default function ProfileScreen() {
                       <div className="flex-1 p-2.5 rounded-lg bg-[var(--af-bg3)]">
                         <div className="flex items-center justify-between gap-2">
                           <div className="text-[12px] font-medium">{item.title}</div>
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${prioColor(item.priority)}`}>{item.priority}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${prioColor(item.priority)}`}>{item.priority}</span>
                         </div>
                         <div className="flex items-center gap-2 text-[10px] text-[var(--af-text3)] mt-1">
                           {item.project && <span>📁 {item.project}</span>}
@@ -805,11 +805,11 @@ export default function ProfileScreen() {
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--af-bg3)]">
                 <div><div className="text-[12px] font-medium">Email</div><div className="text-[11px] text-[var(--muted-foreground)]">{authUser?.email}</div></div>
-                <span className="text-[9px] px-2 py-0.5 rounded-full bg-[var(--af-bg4)] text-[var(--muted-foreground)]">Firebase Auth</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--af-bg4)] text-[var(--muted-foreground)]">Firebase Auth</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--af-bg3)]">
                 <div><div className="text-[12px] font-medium">Rol</div><div className="text-[11px] text-[var(--muted-foreground)]">{ROLE_ICONS[effectiveRole]} {effectiveRole}</div></div>
-                <span className={`text-[9px] px-2 py-0.5 rounded-full border ${ROLE_COLORS[effectiveRole]}`}>{effectiveRole}</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${ROLE_COLORS[effectiveRole]}`}>{effectiveRole}</span>
               </div>
             </div>
           </div>

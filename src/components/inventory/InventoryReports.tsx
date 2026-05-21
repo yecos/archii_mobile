@@ -159,7 +159,7 @@ export default function InventoryReports({
               return (
                 <div key={p.id} className="flex items-center gap-3">
                   <span className="text-xs font-bold text-[var(--muted-foreground)] w-5 text-right">{i + 1}</span>
-                  {p.data.imageData ? <img src={p.data.imageData} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" /> : <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: (getInvCategoryColor(p.data.categoryId) || '#6b7280') + '20' }}><div className="w-3 h-3 rounded-sm" style={{ backgroundColor: getInvCategoryColor(p.data.categoryId) }} /></div>}
+                  {p.data.imageData ? <img src={p.data.imageData} alt="Imagen del producto" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" /> : <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: (getInvCategoryColor(p.data.categoryId) || '#6b7280') + '20' }}><div className="w-3 h-3 rounded-sm" style={{ backgroundColor: getInvCategoryColor(p.data.categoryId) }} /></div>}
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{p.data.name}</div>
                     <div className="text-[10px] text-[var(--muted-foreground)]">{getTotalStock(p)} {p.data.unit} × {fmtCOP(Number(p.data.price) || 0)}</div>
@@ -204,10 +204,10 @@ export default function InventoryReports({
                 <div className="flex-1 flex items-center gap-1">
                   <div className="flex-1 h-5 bg-[var(--border)] rounded-l-full overflow-hidden flex">
                     <div className="h-full bg-emerald-500/70 flex items-center justify-center" style={{ width: entries + exits > 0 ? `${(entries / (entries + exits)) * 100}%` : '50%' }}>
-                      {entries > 0 && <span className="text-[9px] text-white font-medium px-1">+{entries}</span>}
+                      {entries > 0 && <span className="text-[10px] text-white font-medium px-1">+{entries}</span>}
                     </div>
                     <div className="h-full bg-red-500/70 flex items-center justify-center" style={{ width: entries + exits > 0 ? `${(exits / (entries + exits)) * 100}%` : '50%' }}>
-                      {exits > 0 && <span className="text-[9px] text-white font-medium px-1">-{exits}</span>}
+                      {exits > 0 && <span className="text-[10px] text-white font-medium px-1">-{exits}</span>}
                     </div>
                   </div>
                 </div>
@@ -229,7 +229,7 @@ export default function InventoryReports({
             return (
               <div key={p.id} className="bg-[var(--card)] rounded-lg p-3 border border-[var(--border)]">
                 <div className="flex items-start gap-3">
-                  {p.data.imageData ? <img src={p.data.imageData} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" /> : <div className="w-10 h-10 rounded-lg bg-[var(--af-bg4)] flex items-center justify-center flex-shrink-0">📦</div>}
+                  {p.data.imageData ? <img src={p.data.imageData} alt="Imagen del producto" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" /> : <div className="w-10 h-10 rounded-lg bg-[var(--af-bg4)] flex items-center justify-center flex-shrink-0">📦</div>}
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold truncate">{p.data.name}</div>
                     <div className="text-[11px] text-[var(--muted-foreground)]">{getInvCategoryName(p.data.categoryId)}</div>
@@ -267,7 +267,7 @@ export default function InventoryReports({
                   <tr key={p.id} className="border-b border-[var(--border)]/50">
                     <td className="py-2 px-2">
                       <div className="flex items-center gap-2">
-                        {p.data.imageData ? <img src={p.data.imageData} alt="" className="w-6 h-6 rounded object-cover" /> : null}
+                        {p.data.imageData ? <img src={p.data.imageData} alt="Imagen del producto" className="w-6 h-6 rounded object-cover" /> : null}
                         <div>
                           <div className="font-medium">{p.data.name}</div>
                           {p.data.sku && <div className="text-[10px] text-[var(--muted-foreground)]">{p.data.sku}</div>}

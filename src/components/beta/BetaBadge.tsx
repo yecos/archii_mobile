@@ -10,7 +10,7 @@ export function BetaBadge() {
   if (!isFlagEnabled('beta_mode')) return null;
 
   return (
-    <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-[var(--af-accent)] to-amber-500 text-background shadow-sm">
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-[var(--af-accent)] to-amber-500 text-background shadow-sm">
       <Sparkles size={8} aria-hidden="true"/>
       BETA
     </span>

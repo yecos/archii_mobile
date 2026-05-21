@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { useUIStore } from '@/stores/ui-store';
 import { useApp } from '@/contexts/AppContext';
@@ -48,6 +49,8 @@ const SHORTCUTS = [
 export function HelpButton() {
   const { helpOpen, toggleHelp } = useOnboardingStore();
   const [showPulse, setShowPulse] = useState(false);
+  const reduced = useMotionPreference();
+  const instant = { duration: 0 };
 
   // Show pulse animation once when help hasn't been opened yet
   useEffect(() => {
@@ -60,11 +63,11 @@ export function HelpButton() {
       <motion.button
         onClick={toggleHelp}
         className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-[60] w-12 h-12 rounded-full bg-gradient-to-br from-[var(--af-accent)] to-[var(--af-accent2)] text-background shadow-lg shadow-[var(--af-accent)]/20 flex items-center justify-center cursor-pointer border-none hover:shadow-xl hover:shadow-[var(--af-accent)]/30 transition-shadow"
-        initial={{ scale: 0, opacity: 0 }}
+        initial={reduced ? false : { scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 1.5, type: 'spring', stiffness: 200, damping: 15 }}
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.95 }}
+        transition={reduced ? instant : { delay: 1.5, type: 'spring', stiffness: 200, damping: 15 }}
+        whileHover={reduced ? undefined : { scale: 1.08 }}
+        whileTap={reduced ? undefined : { scale: 0.95 }}
         aria-label="Ayuda"
         title="Ayuda"
       >
@@ -74,8 +77,9 @@ export function HelpButton() {
         {showPulse && !helpOpen && (
           <motion.div
             className="absolute inset-0 rounded-full border-2 border-[var(--af-accent)]"
-            animate={{ scale: [1, 1.5], opacity: [0.6, 0] }}
-            transition={{ duration: 2, repeat: 1 }}
+            initial={reduced ? false : undefined}
+            animate={reduced ? { opacity: 0 } : { scale: [1, 1.5], opacity: [0.6, 0] }}
+            transition={reduced ? instant : { duration: 2, repeat: 1 }}
             onAnimationComplete={() => setShowPulse(false)}
           />
         )}
@@ -89,6 +93,8 @@ export function HelpButton() {
 /* ─── Help Panel ─── */
 function HelpPanel() {
   const { helpOpen, setHelpOpen, startWizard, showSpotlight, resetWizard, spotlightTips } = useOnboardingStore();
+  const reduced = useMotionPreference();
+  const instant = { duration: 0 };
   const { toggleAIChat } = useUIStore();
   const { navigateTo } = useApp();
   const [activeTab, setActiveTab] = useState<'guide' | 'shortcuts'>('guide');
@@ -144,10 +150,10 @@ function HelpPanel() {
     <AnimatePresence>
       <motion.div
         className="fixed inset-0 z-[80] flex items-end md:items-center justify-end"
-        initial={{ opacity: 0 }}
+        initial={reduced ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
+        exit={reduced ? { opacity: 0 } : { opacity: 0 }}
+        transition={reduced ? instant : { duration: 0.2 }}
       >
         {/* Backdrop */}
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setHelpOpen(false)} />
@@ -155,10 +161,10 @@ function HelpPanel() {
         {/* Panel */}
         <motion.div
           className="relative z-10 w-full md:w-96 md:mr-4 md:mb-0 bg-[var(--card)] border border-[var(--border)] md:rounded-2xl rounded-t-3xl shadow-2xl max-h-[80vh] flex flex-col"
-          initial={{ y: 100, opacity: 0 }}
+          initial={reduced ? false : { y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
-          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          exit={reduced ? { opacity: 0 } : { y: 100, opacity: 0 }}
+          transition={reduced ? instant : { duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         >
           {/* Mobile drag handle */}
           <div className="flex justify-center pt-3 pb-1 md:hidden">

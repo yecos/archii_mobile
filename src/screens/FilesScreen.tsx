@@ -277,10 +277,10 @@ function FileBrowser({
               <div className="text-3xl text-center mb-2">{getFileIcon(item)}</div>
               <div className="text-[11px] font-medium truncate text-center" title={item.name}>{item.name}</div>
               {item.folder ? (
-                <div className="text-[9px] text-[var(--af-text3)] text-center mt-0.5">Carpeta</div>
+                <div className="text-[10px] text-[var(--af-text3)] text-center mt-0.5">Carpeta</div>
               ) : (
                 <>
-                  <div className="text-[9px] text-[var(--af-text3)] text-center mt-0.5">{fmtSize(item.size || 0)}</div>
+                  <div className="text-[10px] text-[var(--af-text3)] text-center mt-0.5">{fmtSize(item.size || 0)}</div>
                   <div className="flex justify-center gap-1 mt-1.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={e => { e.stopPropagation(); od.downloadFile(item.id); }}
@@ -369,7 +369,7 @@ function FileBrowser({
                   {/* Thumbnail */}
                   <div className="w-9 h-9 rounded-lg bg-[var(--af-bg3)] flex items-center justify-center text-lg flex-shrink-0">
                     {item.thumbnails?.[0]?.medium?.url ? (
-                      <img src={item.thumbnails[0].medium.url} alt="" className="w-9 h-9 rounded-lg object-cover" />
+                      <img src={item.thumbnails[0].medium.url} alt="Vista previa del archivo" className="w-9 h-9 rounded-lg object-cover" />
                     ) : (
                       getFileIcon(item)
                     )}
@@ -691,7 +691,7 @@ export default function FilesScreen() {
                   <span className="text-base">📁</span>
                   <span className="text-[11px] font-medium truncate group-hover:text-[var(--af-accent)] transition-colors">{p.data.name}</span>
                 </div>
-                <span className="text-[9px] text-[var(--af-text3)]">{p.data.status}</span>
+                <span className="text-[10px] text-[var(--af-text3)]">{p.data.status}</span>
               </button>
             ))}
           </div>

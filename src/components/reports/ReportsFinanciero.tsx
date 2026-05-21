@@ -63,9 +63,9 @@ export default function ReportsFinanciero({ projects, expenses, invoices, timeEn
             <CartesianGrid strokeDasharray="3 3" stroke="var(--af-bg4)" vertical={false} />
             <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => v >= 1000000 ? `${(v/1000000).toFixed(0)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(v)} />
-            <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(200,169,110,0.06)' }} />
+            <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(212,184,122,0.06)' }} />
             <Legend content={<ChartLegend />} />
-            <Bar dataKey="presupuesto" name="Presupuesto" fill="#c8a96e" radius={[4, 4, 0, 0]} barSize={18} />
+            <Bar dataKey="presupuesto" name="Presupuesto" fill="#d4b87a" radius={[4, 4, 0, 0]} barSize={18} />
             <Bar dataKey="gastado" name="Gastado" fill={budgetPct > 90 ? '#ef4444' : '#10b981'} radius={[4, 4, 0, 0]} barSize={18} />
           </BarChart>
         </ResponsiveContainer>

@@ -4,6 +4,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
 import { AlertTriangle } from 'lucide-react';
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -26,6 +27,9 @@ export default function ConfirmDialog({
   destructive = true,
   onConfirm,
 }: ConfirmDialogProps) {
+  const reduced = useMotionPreference();
+  const instant = { duration: 0 };
+
   return (
     <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <AnimatePresence>
@@ -33,10 +37,10 @@ export default function ConfirmDialog({
           <AlertDialogPrimitive.Portal forceMount>
             <AlertDialogPrimitive.Overlay className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm" asChild>
               <motion.div
-                initial={{ opacity: 0 }}
+                initial={reduced ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={reduced ? instant : { duration: 0.2 }}
               />
             </AlertDialogPrimitive.Overlay>
             <AlertDialogPrimitive.Content
@@ -45,10 +49,10 @@ export default function ConfirmDialog({
               forceMount
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                initial={reduced ? false : { opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300, duration: 0.2 }}
+                exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 10 }}
+                transition={reduced ? instant : { type: 'spring', damping: 25, stiffness: 300, duration: 0.2 }}
               >
                 <div className="flex items-start gap-3">
                   {destructive && (

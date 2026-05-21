@@ -172,7 +172,7 @@ export default function InvoicesScreen() {
                   </select>
                   <input type="number" className="col-span-2 bg-[var(--card)] border border-[var(--border)] rounded px-2 py-1.5 text-xs outline-none text-right" value={item.hours} onChange={e => updateInvoiceItem(idx, 'hours', e.target.value)} />
                   <input type="number" className="col-span-2 bg-[var(--card)] border border-[var(--border)] rounded px-2 py-1.5 text-xs outline-none text-right" value={item.rate} onChange={e => updateInvoiceItem(idx, 'rate', e.target.value)} />
-                  <button className="col-span-1 text-xs text-red-400 cursor-pointer text-center" onClick={() => removeInvoiceItem(idx)}>✕</button>
+                  <button aria-label="Eliminar concepto" className="col-span-1 text-xs text-red-400 cursor-pointer text-center" onClick={() => removeInvoiceItem(idx)}>✕</button>
                 </div>
               ))}
             </div>
