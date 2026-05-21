@@ -1474,7 +1474,12 @@ export default function AppProvider({ children }: { children: React.ReactNode })
     if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.()) {
       try {
         const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
-        const result = await FirebaseAuthentication.signInWithGoogle();
+        // Use the legacy GoogleSignInClient instead of CredentialManager.
+        // CredentialManager often fails with "No credentials available" on many devices.
+        // The legacy flow shows the reliable Google account picker bottom sheet.
+        const result = await FirebaseAuthentication.signInWithGoogle({
+          useCredentialManager: false,
+        });
 
         if (result?.user) {
           // The Capacitor plugin automatically signs in on the native side.

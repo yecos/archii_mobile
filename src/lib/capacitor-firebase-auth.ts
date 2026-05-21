@@ -42,7 +42,12 @@ export async function signInWithGoogleNative(): Promise<AuthResult> {
   }
 
   try {
-    const result = await FirebaseAuthentication.signInWithGoogle();
+    // Use legacy GoogleSignInClient — CredentialManager often fails with
+    // "No credentials available" on many devices. The legacy flow shows the
+    // reliable Google account picker bottom sheet.
+    const result = await FirebaseAuthentication.signInWithGoogle({
+      useCredentialManager: false,
+    });
     return {
       user: result.user
         ? {
