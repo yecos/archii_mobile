@@ -76,6 +76,7 @@ const SuperAdminScreen = dynamic(() => import('@/screens/SuperAdminScreen'), { s
 const RFIsScreen = dynamic(() => import('@/screens/RFIsScreen'), { ssr: false });
 const SubmittalsScreen = dynamic(() => import('@/screens/SubmittalsScreen'), { ssr: false });
 const PunchListScreen = dynamic(() => import('@/screens/PunchListScreen'), { ssr: false });
+const ChangeOrdersScreen = dynamic(() => import('@/screens/ChangeOrdersScreen'), { ssr: false });
 const KanbanBoardScreen = dynamic(() => import('@/screens/KanbanBoardScreen'), { ssr: false });
 const WeeklyAgendaScreen = dynamic(() => import('@/screens/WeeklyAgendaScreen'), { ssr: false });
 
@@ -147,7 +148,7 @@ function AppContent() {
     budget: 'Presupuestos', files: 'Planos y archivos', gallery: 'Galería', inventory: 'Inventario',
     admin: 'Panel Admin', superAdmin: 'Super Admin', obra: 'Seguimiento obra', suppliers: 'Proveedores', team: 'Equipo',
     calendar: 'Calendario', portal: 'Portal cliente', profile: 'Mi Perfil', install: 'Instalar App',
-    companies: 'Empresas', rfis: 'RFIs', submittals: 'Submittals', punchList: 'Punch List', projectDetail: currentProject?.data.name || 'Proyecto',
+    companies: 'Empresas', rfis: 'RFIs', submittals: 'Submittals', punchList: 'Punch List', changeorders: 'Órdenes de Cambio', projectDetail: currentProject?.data.name || 'Proyecto',
   };
 
   return (
@@ -281,6 +282,7 @@ function AppContent() {
               {screen === 'rfis' && <RFIsScreen />}
               {screen === 'submittals' && <SubmittalsScreen />}
               {screen === 'punchList' && <PunchListScreen />}
+              {screen === 'changeorders' && <ChangeOrdersScreen />}
               </ErrorBoundary>
             </motion.div>
           </AnimatePresence>
