@@ -102,8 +102,8 @@ export default function RootLayout({
                 messagingSenderId: "${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || ''}",
                 appId: "${process.env.NEXT_PUBLIC_FIREBASE_APP_ID || ''}"
               });
-              try { firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(function(){}); } catch(e){}
-              try { firebase.setLogLevel && firebase.setLogLevel('error'); } catch(e){}
+              try { firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(function(e){ console.warn('[Archii] Persistence unavailable:', e); }); } catch(e){ console.warn('[Archii] Persistence init error:', e); }
+              try { firebase.setLogLevel && firebase.setLogLevel('error'); } catch(e){ console.warn('[Archii] setLogLevel error:', e); }
             }
             window.__AF_FB = true;
           } catch(err) {
@@ -164,7 +164,7 @@ export default function RootLayout({
         <Script id="sw-register" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-              navigator.serviceWorker.register('/sw.js').catch(function() {});
+              navigator.serviceWorker.register('/sw.js').catch(function(e){ console.warn('[Archii] SW registration failed:', e); });
             });
           }
         ` }} />
