@@ -7,7 +7,7 @@
 
 import { getFirebase, getFirebaseIdToken, type FirebaseUser, type FirestoreDB } from '@/lib/firebase-service';
 import { fileToBase64, scrubUndefined } from '@/lib/helpers';
-import { DEFAULT_PHASES, PROJECT_TYPE_PHASES, PhaseTemplate } from '@/lib/types';
+import { DEFAULT_PHASES, PROJECT_TYPE_PHASES, PhaseTemplate, ChangeOrderHistoryEntry } from '@/lib/types';
 
 /**
  * Deduplication guard: prevents double-creation when offline writes are queued
@@ -1211,4 +1211,112 @@ export async function updatePunchItemStatus(punchId: string, status: string, sho
     await fb.firestore().collection('punchItems').doc(punchId).update(updates);
     showToast(status === 'Completado' ? '✅ Item completado' : `Item: ${status}`);
   }, showToast);
+}
+
+/* ===== CHANGE ORDERS ===== */
+
+export async function createChangeOrder(data: Record<string, any>): Promise<string> {
+  const fb = getFirebase();
+  const db = fb.firestore();
+  const docRef = db.collection('changeOrders').doc();
+
+  // Get next order number atomically
+  const counterRef = db.collection('projects').doc(data.projectId).collection('changeOrderCounter').doc('counter');
+  const counterSnap = await counterRef.get();
+  let nextNum = 1;
+  if (counterSnap.exists) {
+    nextNum = (counterSnap.data()?.count || 0) + 1;
+  }
+  const orderNumber = `CO-${String(nextNum).padStart(3, '0')}`;
+
+  const historyEntry: ChangeOrderHistoryEntry = {
+    action: 'created',
+    by: data.createdBy,
+    byName: data.createdByName,
+    at: fb.firestore.FieldValue.serverTimestamp(),
+    comments: 'Orden creada',
+  };
+
+  await docRef.set({
+    ...data,
+    id: docRef.id,
+    orderNumber,
+    history: [historyEntry],
+  });
+
+  // Update counter
+  await counterRef.set({ count: nextNum }, { merge: true });
+
+  return docRef.id;
+}
+
+export async function updateChangeOrder(coId: string, data: Record<string, any>): Promise<void> {
+  const fb = getFirebase();
+  const db = fb.firestore();
+  await db.collection('changeOrders').doc(coId).update(data);
+}
+
+export async function submitChangeOrder(coId: string, userName: string, uid: string): Promise<void> {
+  const fb = getFirebase();
+  const db = fb.firestore();
+  const historyEntry: ChangeOrderHistoryEntry = {
+    action: 'submitted',
+    by: uid,
+    byName: userName,
+    at: fb.firestore.FieldValue.serverTimestamp(),
+    comments: 'Enviada para aprobación',
+  };
+  await db.collection('changeOrders').doc(coId).update({
+    status: 'pendiente_aprobacion',
+    submittedAt: fb.firestore.FieldValue.serverTimestamp(),
+    history: fb.firestore.FieldValue.arrayUnion(historyEntry),
+  });
+}
+
+export async function approveChangeOrder(
+  coId: string,
+  approverUid: string,
+  approverName: string,
+  comments: string
+): Promise<void> {
+  const fb = getFirebase();
+  const db = fb.firestore();
+  const historyEntry: ChangeOrderHistoryEntry = {
+    action: 'approved',
+    by: approverUid,
+    byName: approverName,
+    at: fb.firestore.FieldValue.serverTimestamp(),
+    comments,
+  };
+  await db.collection('changeOrders').doc(coId).update({
+    status: 'aprobada',
+    approvedBy: approverUid,
+    approvedByName: approverName,
+    approvedAt: fb.firestore.FieldValue.serverTimestamp(),
+    reviewedComments: comments,
+    history: fb.firestore.FieldValue.arrayUnion(historyEntry),
+  });
+}
+
+export async function rejectChangeOrder(
+  coId: string,
+  approverUid: string,
+  approverName: string,
+  reason: string
+): Promise<void> {
+  const fb = getFirebase();
+  const db = fb.firestore();
+  const historyEntry: ChangeOrderHistoryEntry = {
+    action: 'rejected',
+    by: approverUid,
+    byName: approverName,
+    at: fb.firestore.FieldValue.serverTimestamp(),
+    comments: reason,
+  };
+  await db.collection('changeOrders').doc(coId).update({
+    status: 'rechazada',
+    rejectionReason: reason,
+    reviewedComments: reason,
+    history: fb.firestore.FieldValue.arrayUnion(historyEntry),
+  });
 }

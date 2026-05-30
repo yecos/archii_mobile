@@ -4,7 +4,7 @@ import { getInitials, avatarColor } from '@/lib/helpers';
 import { ROLE_ICONS } from '@/lib/types';
 import { useUIStore } from '@/stores/ui-store';
 import type { FirebaseUser } from '@/lib/firebase-service';
-import { LayoutGrid, User, Folder, ClipboardCheck, MessageCircle, DollarSign, FileText, Camera, Image, Package, Settings, Store, Users, Calendar, Globe, Building2, Download, ChevronLeft, Home, Timer, Receipt, BarChart3, Shield, CircleHelp, ClipboardList, ListChecks, CalendarDays, Search, X, ChevronDown, FolderOpen, ShieldCheck, Briefcase, Wrench } from 'lucide-react';
+import { LayoutGrid, User, Folder, ClipboardCheck, MessageCircle, DollarSign, FileText, Camera, Image, Package, Settings, Store, Users, Calendar, Globe, Building2, Download, ChevronLeft, Home, Timer, Receipt, BarChart3, Shield, CircleHelp, ClipboardList, ListChecks, CalendarDays, Search, X, ChevronDown, FolderOpen, ShieldCheck, Briefcase, Wrench, FileEdit } from 'lucide-react';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 
 interface SidebarProps {
@@ -82,6 +82,7 @@ export default function Sidebar({
     { id: 'rfis', label: 'RFIs', icon: <CircleHelp size={18} className="stroke-current" aria-hidden="true" />, category: 'calidad' as NavCategory },
     { id: 'submittals', label: 'Submittals', icon: <ClipboardList size={18} className="stroke-current" aria-hidden="true" />, category: 'calidad' as NavCategory },
     { id: 'punchList', label: 'Punch List', icon: <ListChecks size={18} className="stroke-current" aria-hidden="true" />, category: 'calidad' as NavCategory },
+    { id: 'changeorders', label: 'Órdenes de Cambio', icon: <FileEdit size={18} className="stroke-current" aria-hidden="true" />, category: 'calidad' as NavCategory },
     // ── Administración ──
     { id: 'admin', label: 'Panel Admin', icon: <Settings size={18} className="stroke-current" aria-hidden="true" />, category: 'admin' as NavCategory },
     { id: 'suppliers', label: 'Proveedores', icon: <Store size={18} className="stroke-current" aria-hidden="true" />, category: 'admin' as NavCategory },
