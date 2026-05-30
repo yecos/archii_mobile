@@ -171,8 +171,8 @@ export async function POST(request: NextRequest) {
 
   const { action, name, code, tenantId, emails, memberUid, email } = body;
 
-  if (!action || !["create", "join", "list", "add-members", "remove-member", "delete-member", "get-members", "add-all-users", "set-super-admin"].includes(action)) {
-    return NextResponse.json({ error: "Acción inválida. Usa: create, join, list, add-members, remove-member, delete-member, get-members, add-all-users, set-super-admin" }, { status: 400 });
+  if (!action || !["create", "join", "list", "add-members", "remove-member", "delete-member", "get-members", "add-all-users", "set-super-admin", "fix-my-role"].includes(action)) {
+    return NextResponse.json({ error: "Acción inválida. Usa: create, join, list, add-members, remove-member, delete-member, get-members, add-all-users, set-super-admin, fix-my-role" }, { status: 400 });
   }
 
   try {
@@ -729,6 +729,60 @@ export async function POST(request: NextRequest) {
         members,
         availableUsers,
       });
+    }
+
+    // ===== FIX MY ROLE =====
+    // Checks all tenants where the user is a member and corrects their role
+    // if they should be Super Admin (creator or in superAdmins array) but their
+    // defaultTenantRole says "Miembro". Also ensures they are in the members array.
+    if (action === "fix-my-role") {
+      // Find all tenants where the user is a member
+      const snap = await db.collection("tenants").where("members", "array-contains", user.uid).get();
+      // Also check tenants where user is in superAdmins but not in members (edge case)
+      const snap2 = await db.collection("tenants").where("superAdmins", "array-contains", user.uid).get();
+
+      const fixed: string[] = [];
+      const already: string[] = [];
+      const addedToMembers: string[] = [];
+
+      const processedIds = new Set<string>();
+
+      const processTenantDoc = async (tenantDoc: any) => {
+        const tid = tenantDoc.id;
+        if (processedIds.has(tid)) return;
+        processedIds.add(tid);
+
+        const tData = tenantDoc.data();
+        const isCreator = tData.createdBy === user.uid;
+        const isSuperAdmin = isCreator || (tData.superAdmins || []).includes(user.uid);
+        const isInMembers = (tData.members || []).includes(user.uid);
+
+        // Fix: if user should be Super Admin but isn't in members, add them
+        if (!isInMembers) {
+          await db.collection("tenants").doc(tid).update({
+            members: FieldValue.arrayUnion(user.uid),
+          });
+          addedToMembers.push(tData.name || tid);
+        }
+
+        // Fix: if user is Super Admin but their defaultTenantRole is wrong
+        if (isSuperAdmin) {
+          const userDoc = await db.collection("users").doc(user.uid).get();
+          if (userDoc.exists && userDoc.data()?.defaultTenantId === tid && (userDoc.data()?.defaultTenantRole || 'Miembro') !== 'Super Admin') {
+            await db.collection("users").doc(user.uid).update({ defaultTenantRole: 'Super Admin' });
+            fixed.push(tData.name || tid);
+          } else {
+            already.push(tData.name || tid);
+          }
+        } else {
+          already.push(tData.name || tid);
+        }
+      };
+
+      for (const doc of snap.docs) await processTenantDoc(doc);
+      for (const doc of snap2.docs) await processTenantDoc(doc);
+
+      return NextResponse.json({ fixed, already, addedToMembers });
     }
 
     return NextResponse.json({ error: "Acción no reconocida" }, { status: 400 });
