@@ -45,11 +45,11 @@ export default function ChatScreen() {
   const { authUser, projects, teamUsers, forms, setForms, showToast } = useApp();
   const {
     audioPreviewBlobRef, audioPreviewDuration, audioPreviewUrl, audioProgress,
-    chatDmUser, chatDropActive, chatMobileShow, chatProjectId, fileIcon,
+    chatDropActive, chatMobileShow, chatProjectId, fileIcon,
     fileInputRef, handleFileSelect, handleMicButton, isRecording,
     messages, pendingFiles, playingAudio, recDuration,
     recVolume, removePendingFile, sendAll, setAudioPreviewDuration, setAudioPreviewUrl,
-    setChatDropActive, setChatDmUser, setChatMobileShow, setChatProjectId, setChatReplyingTo, setMessages,
+    setChatDropActive, setChatMobileShow, setChatProjectId, setChatReplyingTo, setMessages,
     setShowEmojiPicker, showEmojiPicker, stopRecording, toggleAudioPlay,
     chatReplyingTo,
     messageReactions, toggleReaction,
@@ -135,8 +135,8 @@ export default function ChatScreen() {
   }, [filteredMessages]);
 
   // Conversation title/subtitle
-  const convTitle = chatProjectId === '__general__' ? '💬 Chat General' : chatProjectId === '__dm__' ? (() => { const u = teamUsers.find(x => x.id === chatDmUser); return (u?.data.name || u?.data.email || 'Chat directo'); })() : projects.find(p => p.id === chatProjectId)?.data.name || 'Selecciona un proyecto';
-  const convSubtitle = chatProjectId === '__general__' ? 'Canal de todo el equipo' : chatProjectId === '__dm__' ? (() => { const u = teamUsers.find(x => x.id === chatDmUser); return u?.data.role || 'Colaborador'; })() : chatProjectId ? 'Canal del equipo' : '';
+  const convTitle = chatProjectId === '__general__' ? '💬 Chat General' : projects.find(p => p.id === chatProjectId)?.data.name || 'Selecciona un proyecto';
+  const convSubtitle = chatProjectId === '__general__' ? 'Canal de todo el equipo' : chatProjectId ? 'Canal del equipo' : '';
 
   return (
     <div className="animate-fadeIn flex flex-col md:h-full pb-[calc(60px+env(safe-area-inset-bottom,0px))] md:pb-0" style={{ minHeight: 0, flex: 1 }}>
@@ -156,7 +156,7 @@ export default function ChatScreen() {
           {/* Chat General */}
           <div
             className={`flex items-center gap-3 px-3 py-3.5 cursor-pointer transition-all duration-200 border-l-[3px] ${chatProjectId === '__general__' ? 'bg-[var(--accent)] border-l-[var(--af-accent)]' : 'border-l-transparent hover:bg-[var(--af-bg3)]'}`}
-            onClick={() => { setChatProjectId('__general__'); setChatDmUser(null); setChatMobileShow(true); setShowEmojiPicker(false); }}
+            onClick={() => { setChatProjectId('__general__'); setChatMobileShow(true); setShowEmojiPicker(false); }}
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--af-accent)] to-purple-500 flex items-center justify-center text-lg flex-shrink-0 shadow-md">💬</div>
             <div className="min-w-0">
@@ -164,36 +164,6 @@ export default function ChatScreen() {
               <div className="text-[11px] text-[var(--af-text3)] truncate">Canal de todo el equipo</div>
             </div>
           </div>
-
-          {/* Colaboradores (DM) */}
-          {teamUsers.length > 0 && (
-            <div className="mt-1">
-              <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Colaboradores ({teamUsers.length})</div>
-              {teamUsers
-                .filter(u => u.id !== authUser?.uid && (!forms.chatSearch || u.data.name.toLowerCase().includes((forms.chatSearch || '').toLowerCase()) || (u.data.email || '').toLowerCase().includes((forms.chatSearch || '').toLowerCase())))
-                .map(u => (
-                  <div
-                    key={u.id}
-                    className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-all duration-200 border-l-[3px] ${chatDmUser === u.id && chatProjectId === '__dm__' ? 'bg-[var(--accent)] border-l-[var(--af-accent)]' : 'border-l-transparent hover:bg-[var(--af-bg3)]'}`}
-                    onClick={() => { setChatProjectId('__dm__'); setChatDmUser(u.id); setChatMobileShow(true); setShowEmojiPicker(false); }}
-                  >
-                    <div className="relative flex-shrink-0">
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold"
-                        style={{ background: u.data.photoURL ? undefined : getAvatarHSL(u.id), color: '#fff' }}
-                      >
-                        {u.data.photoURL ? <img src={u.data.photoURL} alt="" className="w-full h-full rounded-full object-cover" /> : (u.data.name || u.data.email || '?')[0].toUpperCase()}
-                      </div>
-                      <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[var(--card)]" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[13px] font-medium truncate text-[var(--foreground)]">{u.data.name || u.data.email}</div>
-                      <div className="text-[11px] text-[var(--af-text3)] truncate">{u.data.role || 'Miembro'}</div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
 
           {/* Project chats */}
           {projects.length > 0 && (
@@ -206,8 +176,8 @@ export default function ChatScreen() {
                   return (
                     <div
                       key={p.id}
-                      className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-all duration-200 border-l-[3px] ${p.id === chatProjectId && chatProjectId !== '__general__' && chatProjectId !== '__dm__' ? 'bg-[var(--accent)] border-l-[var(--af-accent)]' : 'border-l-transparent hover:bg-[var(--af-bg3)]'}`}
-                      onClick={() => { setChatProjectId(p.id); setChatDmUser(null); setChatMobileShow(true); setShowEmojiPicker(false); }}
+                      className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-all duration-200 border-l-[3px] ${p.id === chatProjectId && chatProjectId !== '__general__' ? 'bg-[var(--accent)] border-l-[var(--af-accent)]' : 'border-l-transparent hover:bg-[var(--af-bg3)]'}`}
+                      onClick={() => { setChatProjectId(p.id); setChatMobileShow(true); setShowEmojiPicker(false); }}
                     >
                       <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: projColor }} />
                       <div className="min-w-0 flex-1">
@@ -290,13 +260,13 @@ export default function ChatScreen() {
             <div className="flex-1 flex items-center justify-center py-12">
               <div className="text-center max-w-[240px]">
                 <div className="w-20 h-20 rounded-2xl bg-[var(--af-bg3)] flex items-center justify-center mx-auto mb-4">
-                  <span className="text-4xl">{chatProjectId === '__dm__' ? '🤝' : '💬'}</span>
+                  <span className="text-4xl">💬</span>
                 </div>
                 <div className="text-[14px] font-semibold text-[var(--foreground)] mb-1">
-                  {chatMsgSearch.trim() ? 'Sin resultados' : chatProjectId === '__dm__' ? 'Inicia una conversación' : 'Empieza la conversación'}
+                  {chatMsgSearch.trim() ? 'Sin resultados' : 'Empieza la conversación'}
                 </div>
                 <div className="text-[12px] text-[var(--af-text3)] leading-relaxed">
-                  {chatMsgSearch.trim() ? 'No se encontraron mensajes con ese criterio' : chatProjectId === '__dm__' ? 'Envía el primer mensaje para iniciar el chat directo' : '¡Saluda al equipo y comparte actualizaciones!'}
+                  {chatMsgSearch.trim() ? 'No se encontraron mensajes con ese criterio' : '¡Saluda al equipo y comparte actualizaciones!'}
                 </div>
               </div>
             </div>
