@@ -4,7 +4,7 @@ import { getInitials, avatarColor } from '@/lib/helpers';
 import { ROLE_ICONS } from '@/lib/types';
 import { useUIStore } from '@/stores/ui-store';
 import type { FirebaseUser } from '@/lib/firebase-service';
-import { LayoutGrid, User, Folder, ClipboardCheck, MessageCircle, DollarSign, FileText, Camera, Image, Package, Settings, Store, Users, Calendar, Globe, Building2, Download, ChevronLeft, Home, Timer, Receipt, BarChart3, Shield, CircleHelp, ClipboardList, ListChecks, CalendarDays, Search, X, ChevronDown, FolderOpen, ShieldCheck, Briefcase, Wrench } from 'lucide-react';
+import { LayoutGrid, User, Folder, ClipboardCheck, MessageCircle, DollarSign, FileText, Camera, Image, Package, Settings, Store, Users, Calendar, Globe, Building2, Download, ChevronLeft, Home, Timer, Receipt, BarChart3, Shield, CircleHelp, ClipboardList, ListChecks, CalendarDays, Search, X, ChevronDown, FolderOpen, ShieldCheck, Briefcase, Wrench, FileEdit, Mail } from 'lucide-react';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 
 interface SidebarProps {
@@ -71,6 +71,7 @@ export default function Sidebar({
     { id: 'projects', label: 'Proyectos', icon: <Folder size={18} className="stroke-current" aria-hidden="true" />, badge: projects.length, category: 'principal' as NavCategory },
     { id: 'tasks', label: 'Tareas', icon: <ClipboardCheck size={18} className="stroke-current" aria-hidden="true" />, badge: pendingCount > 0 ? pendingCount : undefined, category: 'principal' as NavCategory },
     { id: 'chat', label: 'Chat', icon: <MessageCircle size={18} className="stroke-current" aria-hidden="true" />, category: 'principal' as NavCategory },
+    { id: 'directmessages', label: 'Mensajes Directos', icon: <Mail size={18} className="stroke-current" aria-hidden="true" />, category: 'principal' as NavCategory },
     // ── Proyecto ──
     { id: 'timeTracking', label: 'Time Tracking', icon: <Timer size={18} className="stroke-current" aria-hidden="true" />, category: 'proyecto' as NavCategory },
     { id: 'budget', label: 'Presupuestos', icon: <DollarSign size={18} className="stroke-current" aria-hidden="true" />, category: 'proyecto' as NavCategory },
@@ -82,6 +83,7 @@ export default function Sidebar({
     { id: 'rfis', label: 'RFIs', icon: <CircleHelp size={18} className="stroke-current" aria-hidden="true" />, category: 'calidad' as NavCategory },
     { id: 'submittals', label: 'Submittals', icon: <ClipboardList size={18} className="stroke-current" aria-hidden="true" />, category: 'calidad' as NavCategory },
     { id: 'punchList', label: 'Punch List', icon: <ListChecks size={18} className="stroke-current" aria-hidden="true" />, category: 'calidad' as NavCategory },
+    { id: 'changeorders', label: 'Órdenes de Cambio', icon: <FileEdit size={18} className="stroke-current" aria-hidden="true" />, category: 'calidad' as NavCategory },
     // ── Administración ──
     { id: 'admin', label: 'Panel Admin', icon: <Settings size={18} className="stroke-current" aria-hidden="true" />, category: 'admin' as NavCategory },
     { id: 'suppliers', label: 'Proveedores', icon: <Store size={18} className="stroke-current" aria-hidden="true" />, category: 'admin' as NavCategory },
