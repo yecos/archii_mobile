@@ -76,17 +76,29 @@ export function getAdminApp() {
   if (getApps().length > 0) {
     _adminApp = getApp();
   } else {
-    _adminApp = initializeApp({
-      projectId: FIREBASE_PROJECT_ID,
-      credential: getAdminConfig(),
-    });
+    const credential = getAdminConfig();
+    // Only include credential if it's defined — passing credential: undefined
+    // causes "Invalid Firebase app options" error
+    const config: any = { projectId: FIREBASE_PROJECT_ID };
+    if (credential) {
+      config.credential = credential;
+    }
+    _adminApp = initializeApp(config);
   }
   return _adminApp;
 }
 
 export function getAdminDb() {
   if (_adminDb) return _adminDb;
-  _adminDb = getFirestore(getAdminApp());
+  try {
+    _adminDb = getFirestore(getAdminApp());
+  } catch (err: any) {
+    console.error('[Archii Admin] getAdminDb failed:', err.message);
+    throw new Error(
+      'Firebase Admin no está configurado. Agrega FIREBASE_ADMIN_CREDENTIALS a tu archivo .env.local. ' +
+      'Genera la clave desde Firebase Console → Project Settings → Service Accounts → Generate New Private Key.'
+    );
+  }
   return _adminDb;
 }
 
