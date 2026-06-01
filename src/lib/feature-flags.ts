@@ -26,24 +26,24 @@ const FLAG_REGISTRY: Record<string, { envKey: string; defaultValue: boolean; des
   // FASE 1 flags
   offline_queue: {
     envKey: 'OFFLINE_QUEUE',
-    defaultValue: false,
+    defaultValue: true,
     description: 'Activa la cola offline para writes cuando no hay conexión',
   },
   virtualized_lists: {
     envKey: 'VIRTUALIZED_LISTS',
-    defaultValue: false,
+    defaultValue: true,
     description: 'Usa virtualización para listas grandes (Kanban, Timeline, Notificaciones)',
   },
   audit_logs: {
     envKey: 'AUDIT_LOGS',
-    defaultValue: false,
+    defaultValue: true,
     description: 'Registra todas las operaciones de escritura en audit_logs',
   },
 
   // FASE 2 flags
   rag_search: {
     envKey: 'RAG_SEARCH',
-    defaultValue: false,
+    defaultValue: true,
     description: 'Habilita la búsqueda RAG por tenant (IA semántica)',
   },
   health_score_predictive: {
@@ -90,11 +90,16 @@ const FLAG_REGISTRY: Record<string, { envKey: string; defaultValue: boolean; des
   },
   gdpr_tools: {
     envKey: 'GDPR_TOOLS',
-    defaultValue: false,
+    defaultValue: true,
     description: 'Herramientas GDPR (exportación/eliminación de datos)',
   },
 
   // BETA flags
+  carnets: {
+    envKey: 'CARNETS',
+    defaultValue: true,
+    description: 'Módulo de Carnets corporativos (CRUD, QR, PDF/PNG export)',
+  },
   feedback_widget: {
     envKey: 'FEEDBACK_WIDGET',
     defaultValue: true,
