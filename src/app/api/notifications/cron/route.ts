@@ -64,7 +64,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── 4. DAILY AGENDA REMINDER (today's agenda items) ──
+    // ── 4. AGENDA STARTING REMINDERS (agenda tasks starting soon) ──
+    if (!forceType || forceType === 'hourly') {
+      try {
+        results.agendaStartingReminders = await checkAgendaStartingReminders(db);
+      } catch (err: any) {
+        errors.push(`agendaStartingReminders: ${err.message}`);
+      }
+    }
+
+    // ── 5. DAILY AGENDA REMINDER (today's agenda items) ──
     if (!forceType || forceType === 'daily') {
       try {
         results.dailyAgendaReminder = await checkDailyAgendaReminder(db);
@@ -73,7 +82,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── 5. WEEKLY SUMMARY (Mondays) ──
+    // ── 6. WEEKLY SUMMARY (Mondays) ──
     if (!forceType || forceType === 'weekly') {
       try {
         results.weeklySummary = await checkWeeklySummary(db);
@@ -82,7 +91,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── 6. Persist notification history to Firestore ──
+    // ── 7. Persist notification history to Firestore ──
     // (This is handled client-side now, but we clean up old entries here)
     try {
       await cleanupOldNotifications(db);
@@ -551,6 +560,97 @@ async function checkWeeklySummary(db: any): Promise<{ sent: number; skipped: num
 
   await markNotified(db, weekKey);
   return { sent, skipped: 0 };
+}
+
+/* ── 4. AGENDA STARTING REMINDERS ── */
+async function checkAgendaStartingReminders(db: any): Promise<{ sent: number; skipped: number }> {
+  const today = todayColombia();
+  const currentHour = colombiaHour();
+
+  // Only run between 7am-8pm Colombia time
+  if (currentHour < 7 || currentHour > 20) return { sent: 0, skipped: 0 };
+
+  // Get current Colombia time with minutes
+  const now = new Date();
+  const colombiaOffset = -5 * 60;
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const colombiaTime = new Date(utcMs + colombiaOffset * 60000);
+  const currentMinute = colombiaTime.getHours() * 60 + colombiaTime.getMinutes();
+
+  // Get tasks with agendaMeta for today
+  const snap = await db.collection('tasks')
+    .where('status', '!=', 'Completado')
+    .get();
+
+  const todayAgendaTasks = snap.docs
+    .map((doc: any) => ({ id: doc.id, ...doc.data() }))
+    .filter((t: any) =>
+      t.agendaMeta?.dayKey === today &&
+      t.agendaMeta?.hourSlots &&
+      t.agendaMeta?.hourSlots.length > 0
+    );
+
+  let sent = 0;
+  let skipped = 0;
+
+  for (const task of todayAgendaTasks) {
+    const startHour = Math.min(...task.agendaMeta.hourSlots);
+    const startMinute = startHour * 60; // convert to minutes from midnight
+    const minutesUntil = startMinute - currentMinute;
+
+    // Notify at two thresholds: 15 min before and 5 min before
+    // The cron runs hourly so we check a wider window
+    const shouldNotify15 = minutesUntil > 0 && minutesUntil <= 60; // within 1 hour
+    const shouldNotify5 = minutesUntil > 0 && minutesUntil <= 10;  // within 10 min
+
+    if (!shouldNotify15 && !shouldNotify5) {
+      continue;
+    }
+
+    // Determine which threshold and dedup key
+    const threshold = shouldNotify5 ? 5 : 15;
+    const dedupKey = `agendaStart-${task.id}-${today}-${threshold}min`;
+
+    if (await wasRecentlyNotified(db, dedupKey, 2)) {
+      skipped++;
+      continue;
+    }
+
+    // Get users to notify: assignee + participants
+    const uids: string[] = [];
+    if (task.assigneeId) uids.push(task.assigneeId);
+    if (Array.isArray(task.agendaMeta.participantIds)) uids.push(...task.agendaMeta.participantIds);
+
+    const h12 = startHour === 0 || startHour === 12
+      ? (startHour === 0 ? '12:00 am' : '12:00 pm')
+      : startHour > 12
+        ? `${startHour - 12}:00 pm`
+        : `${startHour}:00 am`;
+
+    for (const uid of [...new Set(uids)]) {
+      const title = threshold <= 5
+        ? `🔴 ¡Actividad empieza pronto: ${task.title}`
+        : `⏰ Actividad en ~${Math.round(minutesUntil)} min: ${task.title}`;
+      const body = `"${task.title}" a las ${h12}${task.priority ? ` · Prioridad: ${task.priority}` : ''}`;
+
+      // Push
+      await sendPushToUser(uid, title, body, { screen: 'weeklyAgenda', itemId: task.id });
+
+      // WhatsApp
+      await sendWhatsAppToUser(db, uid,
+        `${threshold <= 5 ? '🔴 ¡EMPIEZA PRONTO!' : '⏰ Recordatorio de agenda'}\n\n` +
+        `📋 *${task.title}*\n` +
+        `🕐 ${h12}\n` +
+        `${task.priority ? `📌 Prioridad: ${task.priority}\n` : ''}` +
+        `\n_Abre Archii para ver tu agenda._`
+      );
+    }
+
+    await markNotified(db, dedupKey);
+    sent++;
+  }
+
+  return { sent, skipped };
 }
 
 /* ── CLEANUP: Remove old cronNotifLog entries (older than 7 days) ── */

@@ -74,6 +74,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     rfis: true,
     submittals: true,
     punchList: true,
+    agenda: true,
   });
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -167,6 +168,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           inventory: [440, 554.37],
           project: [493.88, 659.25],
           reminder: [880, 1046.5],
+          agenda: [783.99, 987.77],
         };
         const [f1, f2] = tones[type || ''] || [587.33, 880];
         osc.frequency.value = f1;

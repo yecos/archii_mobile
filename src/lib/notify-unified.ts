@@ -242,6 +242,25 @@ export const notifyExternal = {
   },
 
   /**
+   * Actividad de agenda por empezar
+   */
+  async agendaStarting(
+    userId: string,
+    taskTitle: string,
+    startHour: number,
+    minutesLeft: number,
+  ) {
+    const promises: Promise<unknown>[] = [];
+    if (isChannelEnabled('whatsapp'))
+      promises.push(notifyWhatsApp.agendaStarting(userId, taskTitle, startHour, minutesLeft).catch(() => {}));
+    if (isChannelEnabled('email'))
+      promises.push(notifyEmail.agendaStarting(userId, taskTitle, startHour, minutesLeft).catch(() => {}));
+    if (isChannelEnabled('push'))
+      promises.push(notifyPush.agendaStarting(userId, taskTitle, startHour, minutesLeft).catch(() => {}));
+    await Promise.allSettled(promises);
+  },
+
+  /**
    * Notificación personalizada a un usuario
    */
   async custom(userId: string, message: string) {

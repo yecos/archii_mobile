@@ -205,6 +205,32 @@ export const notifyPush = {
   },
 
   /**
+   * Actividad de agenda por empezar.
+   * @param userId - UID del usuario destino
+   * @param taskTitle - Título de la actividad
+   * @param startHour - Hora de inicio (ej: 9 para 9:00am)
+   * @param minutesLeft - Minutos hasta el inicio
+   */
+  async agendaStarting(
+    userId: string,
+    taskTitle: string,
+    startHour: number,
+    minutesLeft: number,
+  ): Promise<boolean> {
+    const h12 = startHour === 0 || startHour === 12
+      ? (startHour === 0 ? '12:00 am' : '12:00 pm')
+      : startHour > 12
+        ? `${startHour - 12}:00 pm`
+        : `${startHour}:00 am`;
+    return sendPushToUser(
+      userId,
+      minutesLeft <= 5 ? '⏰ ¡Tu actividad empieza ahora!' : `⏰ Actividad en ${minutesLeft} min`,
+      `"${taskTitle}" a las ${h12}`,
+      { screen: 'weeklyAgenda', type: 'agenda' }
+    );
+  },
+
+  /**
    * Notificación personalizada.
    * @param userId - UID del usuario destino
    * @param title - Título de la notificación

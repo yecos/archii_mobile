@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { useNotificationsContext } from '@/hooks/useNotifications';
-import { Bell, MessageCircle, ClipboardList, Calendar, Package, Folder, CheckCircle, Clock, Volume2, Check, Loader, XCircle, CircleHelp, FileCheck, ListChecks, Mail, Smartphone, Radio, Settings } from 'lucide-react';
+import { Bell, MessageCircle, ClipboardList, Calendar, Package, Folder, CheckCircle, Clock, Volume2, Check, Loader, XCircle, CircleHelp, FileCheck, ListChecks, Mail, Smartphone, Radio, Settings, CalendarClock } from 'lucide-react';
 import { getExternalChannelPrefs, setExternalChannelPref } from '@/lib/notify-unified';
 import { registerPushSubscription, unregisterPushSubscription, isPushSupported } from '@/lib/push-service';
 
@@ -103,6 +103,7 @@ export default function NotifPanel() {
               { key: 'chat', label: 'Chat', Icon: MessageCircle },
               { key: 'task', label: 'Tareas', Icon: ClipboardList },
               { key: 'meeting', label: 'Reuniones', Icon: Calendar },
+              { key: 'agenda', label: 'Agenda', Icon: CalendarClock },
               { key: 'inventory', label: 'Inventario', Icon: Package },
               { key: 'project', label: 'Proyectos', Icon: Folder },
               { key: 'approval', label: 'Aprob.', Icon: CheckCircle },
@@ -160,7 +161,7 @@ export default function NotifPanel() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <div className={`text-[13px] leading-snug ${!n.read ? 'font-semibold' : 'font-medium'}`}>{n.title}</div>
-                    {n.type && <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${({chat:'bg-blue-500/10 text-blue-400',task:'bg-purple-500/10 text-purple-400',meeting:'bg-amber-500/10 text-amber-400',inventory:'bg-emerald-500/10 text-emerald-400',project:'bg-cyan-500/10 text-cyan-400',approval:'bg-pink-500/10 text-pink-400',reminder:'bg-red-500/10 text-red-400'} as any)[n.type] || 'bg-[var(--af-bg4)] text-[var(--muted-foreground)]'}`}>{n.type}</span>}
+                    {n.type && <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${({chat:'bg-blue-500/10 text-blue-400',task:'bg-purple-500/10 text-purple-400',meeting:'bg-amber-500/10 text-amber-400',agenda:'bg-indigo-500/10 text-indigo-400',inventory:'bg-emerald-500/10 text-emerald-400',project:'bg-cyan-500/10 text-cyan-400',approval:'bg-pink-500/10 text-pink-400',reminder:'bg-red-500/10 text-red-400'} as any)[n.type] || 'bg-[var(--af-bg4)] text-[var(--muted-foreground)]'}`}>{n.type}</span>}
                   </div>
                   <div className="text-[11px] text-[var(--muted-foreground)] mt-0.5 line-clamp-2">{n.body}</div>
                   <div className="text-[10px] text-[var(--af-text3)] mt-1">
@@ -244,6 +245,7 @@ export default function NotifPanel() {
               { key: 'chat', label: 'Chat', Icon: MessageCircle },
               { key: 'tasks', label: 'Tareas', Icon: ClipboardList },
               { key: 'meetings', label: 'Reuniones', Icon: Calendar },
+              { key: 'agenda', label: 'Agenda', Icon: CalendarClock },
               { key: 'approvals', label: 'Aprobaciones', Icon: CheckCircle },
               { key: 'inventory', label: 'Inventario', Icon: Package },
               { key: 'projects', label: 'Proyectos', Icon: Folder },

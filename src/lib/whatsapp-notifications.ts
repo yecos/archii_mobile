@@ -159,6 +159,23 @@ export const notifyWhatsApp = {
     );
   },
 
+  async agendaStarting(
+    userId: string,
+    taskTitle: string,
+    startHour: number,
+    minutesLeft: number,
+  ) {
+    const h12 = startHour === 0 || startHour === 12
+      ? (startHour === 0 ? '12:00 am' : '12:00 pm')
+      : startHour > 12
+        ? `${startHour - 12}:00 pm`
+        : `${startHour}:00 am`;
+    const urgency = minutesLeft <= 5 ? '🔴 ¡EMPIEZA AHORA!' : `⏰ En ${minutesLeft} minutos`;
+    await sendToUser(userId,
+      `${urgency}\n\n📋 *${taskTitle}*\n🕐 ${h12}\n\n_Abre Archii para ver tu agenda._`
+    );
+  },
+
   async custom(userId: string, message: string) {
     await sendToUser(userId, message);
   },
