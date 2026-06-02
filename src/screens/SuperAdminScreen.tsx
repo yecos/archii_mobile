@@ -1,21 +1,21 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '@/contexts/AppContext';
-import { ADMIN_EMAILS, USER_ROLES, ROLE_COLORS, ROLE_ICONS } from '@/lib/types';
+import { ADMIN_EMAILS as FALLBACK_ADMIN_EMAILS, USER_ROLES, ROLE_COLORS, ROLE_ICONS } from '@/lib/types';
 import { getFirebase, getFirebaseIdToken } from '@/lib/firebase-service';
-import { avatarColor, getInitials } from '@/lib/helpers';
+import { avatarColor, getInitials, fmtDateTime } from '@/lib/helpers';
 import {
   Shield, Building2, Users, BarChart3, Settings, Search, RefreshCw,
   Trash2, Edit3, UserPlus, UserMinus, Key, ArrowRightLeft, Eye,
   Copy, Check, ChevronDown, ChevronUp, AlertTriangle, Crown,
   Database, Activity, Globe, PlusCircle, XCircle, CheckCircle2,
-  Loader2, MoreVertical
+  Loader2, MoreVertical, MessageSquare, FileText, Heart, Zap
 } from 'lucide-react';
 import { SkeletonKPI, SkeletonChart, SkeletonTenantDetail } from '@/components/ui/SkeletonLoaders';
 import { useConfirmDialog } from '@/lib/useConfirmDialog';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 
-type SuperAdminTab = 'dashboard' | 'tenants' | 'users' | 'tools';
+type SuperAdminTab = 'dashboard' | 'tenants' | 'users' | 'tools' | 'activity' | 'config';
 
 /* ===== Helper: API caller ===== */
 async function apiCall(action: string, body: Record<string, any> = {}): Promise<any> {
@@ -41,8 +41,24 @@ export default function SuperAdminScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Check super admin access
-  const isSuperAdmin = authUser ? ADMIN_EMAILS.includes(authUser.email || '') : false;
+  // Server-verified admin emails (fetched from env var), with hardcoded fallback
+  const [serverAdminEmails, setServerAdminEmails] = useState<string[]>(FALLBACK_ADMIN_EMAILS);
+
+  useEffect(() => {
+    fetch('/api/admin-emails')
+      .then(r => r.json())
+      .then(data => {
+        if (data.adminEmails && data.adminEmails.length > 0) {
+          setServerAdminEmails(data.adminEmails);
+        }
+      })
+      .catch(() => {
+        // Fallback to hardcoded list if API unreachable
+      });
+  }, []);
+
+  // Check super admin access using server-verified emails
+  const isSuperAdmin = authUser ? serverAdminEmails.includes((authUser.email || '').toLowerCase()) : false;
 
   if (!isSuperAdmin) {
     return (
@@ -97,6 +113,8 @@ export default function SuperAdminScreen() {
           { id: 'tenants' as SuperAdminTab, icon: <Building2 size={14} aria-hidden="true"/>, label: 'Tenants' },
           { id: 'users' as SuperAdminTab, icon: <Users size={14} aria-hidden="true"/>, label: 'Usuarios' },
           { id: 'tools' as SuperAdminTab, icon: <Settings size={14} aria-hidden="true"/>, label: 'Herramientas' },
+          { id: 'activity' as SuperAdminTab, icon: <Activity size={14} aria-hidden="true"/>, label: 'Actividad' },
+          { id: 'config' as SuperAdminTab, icon: <Settings size={14} aria-hidden="true"/>, label: 'Config' },
         ]).map(t => (
           <button
             key={t.id}
@@ -119,8 +137,10 @@ export default function SuperAdminScreen() {
       {/* Tab content */}
       {tab === 'dashboard' && <DashboardTab handleAction={handleAction} showToast={showToast} setLoading={setLoading} />}
       {tab === 'tenants' && <TenantsTab handleAction={handleAction} showToast={showToast} switchTenant={switchTenant} setLoading={setLoading} />}
-      {tab === 'users' && <UsersTab handleAction={handleAction} showToast={showToast} setLoading={setLoading} />}
+      {tab === 'users' && <UsersTab handleAction={handleAction} showToast={showToast} setLoading={setLoading} adminEmails={serverAdminEmails} />}
       {tab === 'tools' && <ToolsTab handleAction={handleAction} showToast={showToast} setLoading={setLoading} />}
+      {tab === 'activity' && <ActivityTab handleAction={handleAction} showToast={showToast} setLoading={setLoading} />}
+      {tab === 'config' && <ConfigTab handleAction={handleAction} showToast={showToast} setLoading={setLoading} />}
     </div>
   );
 }
@@ -129,6 +149,8 @@ export default function SuperAdminScreen() {
 function DashboardTab({ handleAction, showToast, setLoading }: { handleAction: any; showToast: any; setLoading: any }) {
   const [stats, setStats] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [assigningUser, setAssigningUser] = useState<string | null>(null);
+  const [selectedTenantForAssign, setSelectedTenantForAssign] = useState<string>('');
 
   const loadDashboard = useCallback(async () => {
     setRefreshing(true);
@@ -141,6 +163,19 @@ function DashboardTab({ handleAction, showToast, setLoading }: { handleAction: a
   }, [handleAction]);
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
+
+  // Derive tenants for dropdown from dashboard data (avoid extra list-tenants call)
+  const tenants: { id: string; name: string; code: string }[] = stats?.tenantSummaries || [];
+
+  const assignOrphanToTenant = async (uid: string, userName: string) => {
+    if (!selectedTenantForAssign) return showToast('Selecciona un tenant', 'error');
+    const result = await handleAction('add-user-to-tenant', { tenantId: selectedTenantForAssign, targetUid: uid }, `${userName} asignado al tenant`);
+    if (result) {
+      setAssigningUser(null);
+      setSelectedTenantForAssign('');
+      loadDashboard();
+    }
+  };
 
   if (!stats) {
     return (
@@ -201,13 +236,47 @@ function DashboardTab({ handleAction, showToast, setLoading }: { handleAction: a
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {stats.orphanUsers.map((u: any, i: number) => (
-              <div key={i} className="flex items-center gap-2 bg-[var(--card)] rounded-lg p-2.5 border border-[var(--border)]">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold ${avatarColor(u.uid)}`}>{getInitials(u.name)}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium truncate">{u.name}</div>
-                  <div className="text-[10px] text-[var(--muted-foreground)] truncate">{u.email}</div>
+              <div key={i} className="bg-[var(--card)] rounded-lg p-2.5 border border-[var(--border)]">
+                <div className="flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold ${avatarColor(u.uid)}`}>{getInitials(u.name)}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium truncate">{u.name}</div>
+                    <div className="text-[10px] text-[var(--muted-foreground)] truncate">{u.email}</div>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-[var(--af-bg3)] border-[var(--border)]">{u.role}</span>
                 </div>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-[var(--af-bg3)] border-[var(--border)]">{u.role}</span>
+                {assigningUser === u.uid ? (
+                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[var(--border)]">
+                    <select
+                      value={selectedTenantForAssign}
+                      onChange={e => setSelectedTenantForAssign(e.target.value)}
+                      className="flex-1 px-2 py-1 rounded-lg bg-[var(--af-bg3)] border border-[var(--border)] text-[10px] outline-none cursor-pointer"
+                    >
+                      <option value="">Seleccionar Tenant...</option>
+                      {tenants.map(t => <option key={t.id} value={t.id}>{t.name} ({t.code})</option>)}
+                    </select>
+                    <button
+                      onClick={() => assignOrphanToTenant(u.uid, u.name)}
+                      disabled={!selectedTenantForAssign}
+                      className="px-2 py-1 rounded-lg text-[10px] font-semibold cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600 transition-all disabled:opacity-50"
+                    >
+                      Asignar
+                    </button>
+                    <button
+                      onClick={() => { setAssigningUser(null); setSelectedTenantForAssign(''); }}
+                      className="px-2 py-1 rounded-lg text-[10px] cursor-pointer bg-[var(--af-bg4)] border border-[var(--border)]"
+                    >
+                      X
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setAssigningUser(u.uid)}
+                    className="mt-2 pt-2 border-t border-[var(--border)] w-full flex items-center justify-center gap-1 text-[10px] font-medium text-[var(--af-accent)] hover:text-[var(--af-accent2)] cursor-pointer transition-colors"
+                  >
+                    <UserPlus size={10} aria-hidden="true"/> Asignar a Tenant
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -565,7 +634,7 @@ function TenantsTab({ handleAction, showToast, switchTenant, setLoading }: { han
 }
 
 /* ===== USERS TAB ===== */
-function UsersTab({ handleAction, showToast, setLoading }: { handleAction: any; showToast: any; setLoading: any }) {
+function UsersTab({ handleAction, showToast, setLoading, adminEmails }: { handleAction: any; showToast: any; setLoading: any; adminEmails: string[] }) {
   const [users, setUsers] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState('all');
@@ -705,7 +774,7 @@ function UsersTab({ handleAction, showToast, setLoading }: { handleAction: any; 
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold truncate">{u.name}</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${ROLE_COLORS[u.role] || ROLE_COLORS['Miembro']}`}>{ROLE_ICONS[u.role]} {u.role}</span>
-                  {ADMIN_EMAILS.includes(u.email) && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-semibold">SA</span>}
+                  {adminEmails.includes((u.email || '').toLowerCase()) && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-semibold">SA</span>}
                 </div>
                 <div className="text-[10px] text-[var(--muted-foreground)] truncate">{u.email} · {u.tenantsCount} tenant{u.tenantsCount !== 1 ? 's' : ''}</div>
                 {u.tenants && u.tenants.length > 0 && (
@@ -720,7 +789,7 @@ function UsersTab({ handleAction, showToast, setLoading }: { handleAction: any; 
               </div>
 
               {/* User actions */}
-              {!ADMIN_EMAILS.includes(u.email) && (
+              {!adminEmails.includes((u.email || '').toLowerCase()) && (
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <select
                     value={u.role}
@@ -755,6 +824,7 @@ function ToolsTab({ handleAction, showToast, setLoading }: { handleAction: any; 
   const [tenants, setTenants] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [actionLog, setActionLog] = useState<string[]>([]);
+  const [userSearch, setUserSearch] = useState('');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -773,6 +843,12 @@ function ToolsTab({ handleAction, showToast, setLoading }: { handleAction: any; 
   useEffect(() => { loadData(); }, [loadData]);
 
   const addLog = (msg: string) => setActionLog(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 50));
+
+  const filteredUsers = users.filter(u => {
+    if (!userSearch) return true;
+    const q = userSearch.toLowerCase();
+    return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+  });
 
   const addUserToTenant = async () => {
     if (!addUserState.tenantId || !addUserState.uid) return showToast('Selecciona tenant y usuario', 'error');
@@ -803,7 +879,19 @@ function ToolsTab({ handleAction, showToast, setLoading }: { handleAction: any; 
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold">Herramientas de Gestión</h3>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h3 className="text-lg font-semibold">Herramientas de Gestión</h3>
+        <div className="relative w-full sm:w-64">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" aria-hidden="true"/>
+          <input
+            type="text"
+            placeholder="Buscar usuario por nombre o email..."
+            value={userSearch}
+            onChange={e => setUserSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 rounded-lg bg-[var(--af-bg3)] border border-[var(--border)] text-xs text-[var(--foreground)] outline-none focus:border-[var(--af-accent)] transition-colors"
+          />
+        </div>
+      </div>
 
       {/* Add User to Tenant */}
       <div className="bg-[var(--af-bg3)] rounded-xl border border-[var(--border)] p-4">
@@ -814,8 +902,8 @@ function ToolsTab({ handleAction, showToast, setLoading }: { handleAction: any; 
             {tenants.map(t => <option key={t.id} value={t.id}>{t.name} ({t.code})</option>)}
           </select>
           <select value={addUserState.uid} onChange={e => setAddUserState(p => ({ ...p, uid: e.target.value }))} className="px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs outline-none cursor-pointer">
-            <option value="">Seleccionar Usuario...</option>
-            {users.map(u => <option key={u.uid} value={u.uid}>{u.name} ({u.email})</option>)}
+            <option value="">Seleccionar Usuario ({filteredUsers.length})...</option>
+            {filteredUsers.map(u => <option key={u.uid} value={u.uid}>{u.name} ({u.email})</option>)}
           </select>
           <button onClick={addUserToTenant} className="px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600 transition-all">Agregar</button>
         </div>
@@ -830,8 +918,8 @@ function ToolsTab({ handleAction, showToast, setLoading }: { handleAction: any; 
             {tenants.map(t => <option key={t.id} value={t.id}>{t.name} ({t.code})</option>)}
           </select>
           <select value={removeUserState.uid} onChange={e => setRemoveUserState(p => ({ ...p, uid: e.target.value }))} className="px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs outline-none cursor-pointer">
-            <option value="">Seleccionar Usuario...</option>
-            {users.map(u => <option key={u.uid} value={u.uid}>{u.name} ({u.email})</option>)}
+            <option value="">Seleccionar Usuario ({filteredUsers.length})...</option>
+            {filteredUsers.map(u => <option key={u.uid} value={u.uid}>{u.name} ({u.email})</option>)}
           </select>
           <button onClick={removeUserFromTenant} className="px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer bg-red-500 text-white hover:bg-red-600 transition-all">Remover</button>
         </div>
@@ -846,8 +934,8 @@ function ToolsTab({ handleAction, showToast, setLoading }: { handleAction: any; 
             {tenants.map(t => <option key={t.id} value={t.id}>{t.name} ({t.code})</option>)}
           </select>
           <select value={transferState.newOwnerUid} onChange={e => setTransferState(p => ({ ...p, newOwnerUid: e.target.value }))} className="px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs outline-none cursor-pointer">
-            <option value="">Nuevo Owner...</option>
-            {users.map(u => <option key={u.uid} value={u.uid}>{u.name} ({u.email})</option>)}
+            <option value="">Nuevo Owner ({filteredUsers.length})...</option>
+            {filteredUsers.map(u => <option key={u.uid} value={u.uid}>{u.name} ({u.email})</option>)}
           </select>
           <button onClick={transferOwnership} className="px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer bg-amber-500 text-white hover:bg-amber-600 transition-all">Transferir</button>
         </div>
@@ -868,6 +956,467 @@ function ToolsTab({ handleAction, showToast, setLoading }: { handleAction: any; 
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ===== ACTIVITY TAB ===== */
+type ActivitySubTab = 'audit' | 'errors' | 'feedback';
+
+function ActivityTab({ handleAction, showToast, setLoading }: { handleAction: any; showToast: any; setLoading: any }) {
+  const [subTab, setSubTab] = useState<ActivitySubTab>('audit');
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold">Actividad Global</h3>
+
+      {/* Sub-tabs */}
+      <div className="flex gap-1">
+        {([
+          { id: 'audit' as ActivitySubTab, icon: <FileText size={14} aria-hidden="true"/>, label: 'Auditoría' },
+          { id: 'errors' as ActivitySubTab, icon: <AlertTriangle size={14} aria-hidden="true"/>, label: 'Errores' },
+          { id: 'feedback' as ActivitySubTab, icon: <MessageSquare size={14} aria-hidden="true"/>, label: 'Feedback' },
+        ]).map(t => (
+          <button
+            key={t.id}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap cursor-pointer transition-all ${subTab === t.id ? 'bg-[var(--af-accent)] text-background shadow-sm' : 'bg-[var(--af-bg3)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}`}
+            onClick={() => setSubTab(t.id)}
+          >
+            {t.icon} {t.label}
+          </button>
+        ))}
+      </div>
+
+      {subTab === 'audit' && <AuditSubTab handleAction={handleAction} showToast={showToast} setLoading={setLoading} />}
+      {subTab === 'errors' && <ErrorsSubTab handleAction={handleAction} showToast={showToast} setLoading={setLoading} />}
+      {subTab === 'feedback' && <FeedbackSubTab handleAction={handleAction} showToast={showToast} setLoading={setLoading} />}
+    </div>
+  );
+}
+
+/* --- Audit Sub-Tab --- */
+function AuditSubTab({ handleAction, showToast, setLoading }: { handleAction: any; showToast: any; setLoading: any }) {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [search, setSearch] = useState('');
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  const loadAudit = useCallback(async () => {
+    const data = await handleAction('global-audit', {}, '');
+    if (data) setLogs(data.logs || []);
+  }, [handleAction]);
+
+  useEffect(() => { loadAudit(); }, [loadAudit]);
+
+  const filteredLogs = logs.filter((log: any) => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return (
+      (log.userName || '').toLowerCase().includes(s) ||
+      (log.action || '').toLowerCase().includes(s) ||
+      (log.resourceType || '').toLowerCase().includes(s) ||
+      (log.description || '').toLowerCase().includes(s)
+    );
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" aria-hidden="true"/>
+          <input
+            type="text"
+            placeholder="Buscar por usuario, acción, recurso o descripción..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 rounded-lg bg-[var(--af-bg3)] border border-[var(--border)] text-xs text-[var(--foreground)] outline-none focus:border-[var(--af-accent)]"
+          />
+        </div>
+        <button
+          onClick={loadAudit}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium cursor-pointer bg-[var(--af-bg3)] border border-[var(--border)] hover:bg-[var(--af-bg4)] transition-all"
+        >
+          <RefreshCw size={12} aria-hidden="true"/> Actualizar
+        </button>
+      </div>
+
+      {filteredLogs.length === 0 ? (
+        <div className="text-center py-10 text-sm text-[var(--muted-foreground)]">No hay registros de auditoría</div>
+      ) : (
+        <div className="space-y-2 max-h-[600px] overflow-y-auto">
+          {filteredLogs.map((log: any, i: number) => {
+            const logId = log.id || `audit-${i}`;
+            return (
+              <div key={logId} className="bg-[var(--af-bg3)] rounded-xl border border-[var(--border)] overflow-hidden">
+                <button
+                  className="w-full flex items-center gap-3 p-3 text-left cursor-pointer hover:bg-[var(--af-bg4)] transition-colors"
+                  onClick={() => setExpandedRow(expandedRow === logId ? null : logId)}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                    <FileText size={14} className="text-blue-400" aria-hidden="true"/>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold">{log.userName || 'Desconocido'}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">{log.action}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--card)] border border-[var(--border)]">{log.resourceType}</span>
+                    </div>
+                    <div className="text-[10px] text-[var(--muted-foreground)] truncate mt-0.5">{log.description}</div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-[10px] text-[var(--muted-foreground)]">{fmtDateTime(log.timestamp)}</div>
+                    {log.tenantName && <div className="text-[10px] text-[var(--af-accent)] font-medium">{log.tenantName}</div>}
+                  </div>
+                  {expandedRow === logId ? <ChevronUp size={14} className="text-[var(--muted-foreground)] flex-shrink-0" aria-hidden="true"/> : <ChevronDown size={14} className="text-[var(--muted-foreground)] flex-shrink-0" aria-hidden="true"/>}
+                </button>
+                {expandedRow === logId && (
+                  <div className="border-t border-[var(--border)] p-3 bg-[var(--card)]">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
+                      {log.tenantId && <div><span className="text-[var(--muted-foreground)]">Tenant ID:</span> <span className="font-mono">{log.tenantId}</span></div>}
+                      {log.userId && <div><span className="text-[var(--muted-foreground)]">User ID:</span> <span className="font-mono">{log.userId}</span></div>}
+                      {log.resourceId && <div><span className="text-[var(--muted-foreground)]">Resource ID:</span> <span className="font-mono">{log.resourceId}</span></div>}
+                      {log.ip && <div><span className="text-[var(--muted-foreground)]">IP:</span> <span className="font-mono">{log.ip}</span></div>}
+                    </div>
+                    {log.details && (
+                      <div className="mt-2 p-2 rounded-lg bg-[var(--af-bg3)] border border-[var(--border)]">
+                        <div className="text-[10px] text-[var(--muted-foreground)] mb-1 font-semibold">Detalles</div>
+                        <pre className="text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-y-auto">{typeof log.details === 'string' ? log.details : JSON.stringify(log.details, null, 2)}</pre>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* --- Errors Sub-Tab --- */
+function ErrorsSubTab({ handleAction, showToast, setLoading }: { handleAction: any; showToast: any; setLoading: any }) {
+  const [errorGroups, setErrorGroups] = useState<any[]>([]);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+
+  const loadErrors = useCallback(async () => {
+    const data = await handleAction('global-errors', {}, '');
+    if (data) setErrorGroups(data.groups || []);
+  }, [handleAction]);
+
+  useEffect(() => { loadErrors(); }, [loadErrors]);
+
+  const resolveError = async (errorId: string) => {
+    await handleAction('resolve-error-global', { errorId }, 'Error marcado como resuelto');
+    loadErrors();
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-[var(--muted-foreground)]">{errorGroups.length} grupos de errores</span>
+        <button
+          onClick={loadErrors}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium cursor-pointer bg-[var(--af-bg3)] border border-[var(--border)] hover:bg-[var(--af-bg4)] transition-all"
+        >
+          <RefreshCw size={12} aria-hidden="true"/> Actualizar
+        </button>
+      </div>
+
+      {errorGroups.length === 0 ? (
+        <div className="text-center py-10 text-sm text-[var(--muted-foreground)]">No hay errores reportados</div>
+      ) : (
+        <div className="space-y-2 max-h-[600px] overflow-y-auto">
+          {errorGroups.map((g: any, i: number) => {
+            const groupId = `err-${i}`;
+            return (
+              <div key={groupId} className={`bg-[var(--af-bg3)] rounded-xl border overflow-hidden ${g.resolved ? 'border-emerald-500/20' : 'border-red-500/20'}`}>
+                <button
+                  className="w-full flex items-center gap-3 p-3 text-left cursor-pointer hover:bg-[var(--af-bg4)] transition-colors"
+                  onClick={() => setExpandedGroup(expandedGroup === groupId ? null : groupId)}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${g.resolved ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+                    <AlertTriangle size={14} className={g.resolved ? 'text-emerald-400' : 'text-red-400'} aria-hidden="true"/>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium truncate">{g.message}</div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-semibold">{g.count}x</span>
+                      <span className="text-[10px] text-[var(--muted-foreground)]">Primero: {fmtDateTime(g.firstSeen)}</span>
+                      <span className="text-[10px] text-[var(--muted-foreground)]">Último: {fmtDateTime(g.lastSeen)}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {g.resolved ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">Resuelto</span>
+                    ) : (
+                      <button
+                        onClick={e => { e.stopPropagation(); resolveError(g.sampleIds?.[0] || groupId); }}
+                        className="px-2 py-1 rounded-lg text-[10px] font-semibold cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
+                      >
+                        Resolver
+                      </button>
+                    )}
+                    {expandedGroup === groupId ? <ChevronUp size={14} className="text-[var(--muted-foreground)]" aria-hidden="true"/> : <ChevronDown size={14} className="text-[var(--muted-foreground)]" aria-hidden="true"/>}
+                  </div>
+                </button>
+                {expandedGroup === groupId && g.stackTrace && (
+                  <div className="border-t border-[var(--border)] p-3 bg-[var(--card)]">
+                    <div className="text-[10px] text-[var(--muted-foreground)] mb-1 font-semibold">Stack Trace</div>
+                    <pre className="text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-y-auto bg-[var(--af-bg3)] p-2 rounded-lg border border-[var(--border)]">{typeof g.stackTrace === 'string' ? g.stackTrace : JSON.stringify(g.stackTrace, null, 2)}</pre>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* --- Feedback Sub-Tab --- */
+function FeedbackSubTab({ handleAction, showToast, setLoading }: { handleAction: any; showToast: any; setLoading: any }) {
+  const [feedback, setFeedback] = useState<any[]>([]);
+  const [categoryStats, setCategoryStats] = useState<any>({});
+
+  const loadFeedback = useCallback(async () => {
+    const data = await handleAction('global-feedback', {}, '');
+    if (data) {
+      setFeedback(data.feedback || []);
+      setCategoryStats(data.categoryStats || {});
+    }
+  }, [handleAction]);
+
+  useEffect(() => { loadFeedback(); }, [loadFeedback]);
+
+  const reviewFeedback = async (feedbackId: string, status: string) => {
+    await handleAction('review-feedback-global', { feedbackId, status }, `Feedback marcado como ${status}`);
+    loadFeedback();
+  };
+
+  const statusColors: Record<string, string> = {
+    pending: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    reviewed: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    resolved: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  };
+
+  const statusLabels: Record<string, string> = {
+    pending: 'Pendiente',
+    reviewed: 'Revisado',
+    resolved: 'Resuelto',
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Category stats */}
+      {Object.keys(categoryStats).length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {Object.entries(categoryStats).map(([cat, count]) => (
+            <div key={cat} className="bg-[var(--af-bg3)] rounded-xl p-3 border border-[var(--border)]">
+              <div className="text-lg font-bold">{String(count)}</div>
+              <div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide font-semibold">{cat}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-[var(--muted-foreground)]">{feedback.length} items de feedback</span>
+        <button
+          onClick={loadFeedback}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium cursor-pointer bg-[var(--af-bg3)] border border-[var(--border)] hover:bg-[var(--af-bg4)] transition-all"
+        >
+          <RefreshCw size={12} aria-hidden="true"/> Actualizar
+        </button>
+      </div>
+
+      {feedback.length === 0 ? (
+        <div className="text-center py-10 text-sm text-[var(--muted-foreground)]">No hay feedback recibido</div>
+      ) : (
+        <div className="space-y-2 max-h-[600px] overflow-y-auto">
+          {feedback.map((item: any, i: number) => (
+            <div key={item.id || `fb-${i}`} className="bg-[var(--af-bg3)] rounded-xl border border-[var(--border)] p-3">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                  <MessageSquare size={14} className="text-purple-400" aria-hidden="true"/>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-semibold">{item.userName || 'Anónimo'}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">{item.category}</span>
+                    {item.rating && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">⭐ {item.rating}</span>
+                    )}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${statusColors[item.status] || statusColors.pending}`}>{statusLabels[item.status] || item.status}</span>
+                  </div>
+                  <div className="text-xs mt-1 text-[var(--foreground)]">{item.text}</div>
+                  <div className="flex items-center gap-2 mt-2">
+                    {item.status !== 'pending' || (
+                      <>
+                        <button onClick={() => reviewFeedback(item.id, 'reviewed')} className="px-2 py-1 rounded-lg text-[10px] font-semibold cursor-pointer bg-blue-500 text-white hover:bg-blue-600 transition-all">Revisado</button>
+                        <button onClick={() => reviewFeedback(item.id, 'resolved')} className="px-2 py-1 rounded-lg text-[10px] font-semibold cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600 transition-all">Resuelto</button>
+                      </>
+                    )}
+                    {item.status === 'reviewed' && (
+                      <button onClick={() => reviewFeedback(item.id, 'resolved')} className="px-2 py-1 rounded-lg text-[10px] font-semibold cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600 transition-all">Resolver</button>
+                    )}
+                    {(item.status === 'resolved' || item.status === 'reviewed') && (
+                      <button onClick={() => reviewFeedback(item.id, 'pending')} className="px-2 py-1 rounded-lg text-[10px] font-semibold cursor-pointer bg-amber-500 text-white hover:bg-amber-600 transition-all">Reabrir</button>
+                    )}
+                    <span className="text-[10px] text-[var(--muted-foreground)] ml-auto">{fmtDateTime(item.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ===== CONFIG TAB ===== */
+function ConfigTab({ handleAction, showToast, setLoading }: { handleAction: any; showToast: any; setLoading: any }) {
+  const [flags, setFlags] = useState<any[]>([]);
+  const [healthResult, setHealthResult] = useState<any>(null);
+  const [loadingHealth, setLoadingHealth] = useState(false);
+
+  const loadFlags = useCallback(async () => {
+    const data = await handleAction('get-feature-flags', {}, '');
+    if (data && data.flags) setFlags(data.flags);
+  }, [handleAction]);
+
+  useEffect(() => { loadFlags(); }, [loadFlags]);
+
+  const toggleFlag = async (flagKey: string, currentEnabled: boolean) => {
+    await handleAction('update-feature-flag', { flagKey, enabled: !currentEnabled }, `Flag "${flagKey}" ${!currentEnabled ? 'habilitada' : 'deshabilitada'}`);
+    loadFlags();
+  };
+
+  const runHealthCheck = async () => {
+    setLoadingHealth(true);
+    try {
+      const data = await handleAction('health-check', {}, '');
+      if (data) setHealthResult(data);
+    } finally {
+      setLoadingHealth(false);
+    }
+  };
+
+  const overallStatus = healthResult?.status || null;
+  const statusBadge: Record<string, string> = {
+    healthy: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    degraded: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    down: 'bg-red-500/10 text-red-400 border-red-500/20',
+  };
+  const statusIcons: Record<string, React.ReactNode> = {
+    healthy: <CheckCircle2 size={14} className="text-emerald-400" aria-hidden="true"/>,
+    degraded: <AlertTriangle size={14} className="text-amber-400" aria-hidden="true"/>,
+    down: <XCircle size={14} className="text-red-400" aria-hidden="true"/>,
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Feature Flags */}
+      <div className="bg-[var(--af-bg3)] rounded-xl border border-[var(--border)] p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-sm font-semibold flex items-center gap-2">
+            <Zap size={14} className="text-amber-400" aria-hidden="true"/> Feature Flags
+          </h4>
+          <button
+            onClick={loadFlags}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer bg-[var(--card)] border border-[var(--border)] hover:bg-[var(--af-bg4)] transition-all"
+          >
+            <RefreshCw size={12} aria-hidden="true"/> Recargar
+          </button>
+        </div>
+
+        {flags.length === 0 ? (
+          <div className="text-center py-6 text-xs text-[var(--muted-foreground)]">No hay feature flags configurados</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {flags.map((flag: any) => (
+              <div
+                key={flag.key}
+                className={`rounded-xl p-4 border transition-all cursor-pointer ${flag.enabled ? 'bg-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/40' : 'bg-[var(--card)] border-[var(--border)] hover:border-[var(--af-accent)]/30'}`}
+                onClick={() => toggleFlag(flag.key, flag.enabled)}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-semibold">{flag.key}</span>
+                  <div className={`w-9 h-5 rounded-full flex items-center transition-all px-0.5 ${flag.enabled ? 'bg-emerald-500 justify-end' : 'bg-[var(--af-bg4)] justify-start'}`}>
+                    <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                  </div>
+                </div>
+                <div className="text-[10px] text-[var(--muted-foreground)]">{flag.description || 'Sin descripción'}</div>
+                <div className="flex items-center gap-1.5 mt-2">
+                  {flag.enabled ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">Habilitada</span>
+                  ) : (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-semibold">Deshabilitada</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Health Check */}
+      <div className="bg-[var(--af-bg3)] rounded-xl border border-[var(--border)] p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-sm font-semibold flex items-center gap-2">
+            <Heart size={14} className="text-red-400" aria-hidden="true"/> Health Check
+          </h4>
+          <button
+            onClick={runHealthCheck}
+            disabled={loadingHealth}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer bg-[var(--af-accent)] text-background hover:bg-[var(--af-accent2)] transition-all disabled:opacity-50"
+          >
+            {loadingHealth ? <Loader2 size={12} className="animate-spin" aria-hidden="true"/> : <Zap size={12} aria-hidden="true"/>} Ejecutar Health Check
+          </button>
+        </div>
+
+        {healthResult ? (
+          <div className="space-y-4">
+            {/* Overall status */}
+            <div className={`flex items-center gap-2 p-3 rounded-xl border ${statusBadge[overallStatus] || statusBadge.down}`}>
+              {statusIcons[overallStatus] || statusIcons.down}
+              <span className="text-sm font-semibold capitalize">{overallStatus === 'healthy' ? 'Saludable' : overallStatus === 'degraded' ? 'Degradado' : 'Caído'}</span>
+            </div>
+
+            {/* Check cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {[
+                { label: 'Admin SDK', ok: healthResult.checks?.adminSdk },
+                { label: 'Auth', ok: healthResult.checks?.auth },
+                { label: 'Firestore Read', ok: healthResult.checks?.firestoreRead },
+                { label: 'Firestore Write', ok: healthResult.checks?.firestoreWrite },
+              ].map(check => (
+                <div key={check.label} className={`rounded-xl p-3 border ${check.ok ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    {check.ok ? <CheckCircle2 size={14} className="text-emerald-400" aria-hidden="true"/> : <XCircle size={14} className="text-red-400" aria-hidden="true"/>}
+                    <span className="text-xs font-semibold">{check.label}</span>
+                  </div>
+                  <div className={`text-[10px] font-semibold ${check.ok ? 'text-emerald-400' : 'text-red-400'}`}>{check.ok ? 'Operativo' : 'Fallido'}</div>
+                </div>
+              ))}
+
+              {[
+                { label: 'Total Tenants', value: healthResult.checks?.totalTenants ?? '—', color: 'text-blue-400' },
+                { label: 'Total Users', value: healthResult.checks?.totalUsers ?? '—', color: 'text-emerald-400' },
+                { label: 'Total Projects', value: healthResult.checks?.totalProjects ?? '—', color: 'text-amber-400' },
+              ].map(stat => (
+                <div key={stat.label} className="rounded-xl p-3 border border-[var(--border)] bg-[var(--card)]">
+                  <div className={`text-lg font-bold ${stat.color}`}>{String(stat.value)}</div>
+                  <div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide font-semibold">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-6 text-xs text-[var(--muted-foreground)]">Haz clic en &quot;Ejecutar Health Check&quot; para diagnosticar la plataforma</div>
+        )}
+      </div>
     </div>
   );
 }

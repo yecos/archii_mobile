@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, AuthError } from "@/lib/api-auth";
-import { getAdminDb, getAdminFieldValue } from "@/lib/firebase-admin";
+import { getAdminDb, getAdminFieldValue, getAdminAuth, isAdminInitialized } from "@/lib/firebase-admin";
+import { getAllFlags } from "@/lib/feature-flags";
 
 /**
  * POST /api/super-admin
@@ -24,6 +25,14 @@ import { getAdminDb, getAdminFieldValue } from "@/lib/firebase-admin";
  *   - transfer-ownership: Transferir propiedad de un tenant
  *   - tenant-stats: Estadísticas detalladas de un tenant
  *   - bulk-action: Acción masiva sobre múltiples tenants/usuarios
+ *   - global-audit: Obtener audit logs de TODOS los tenants
+ *   - global-errors: Obtener reportes de error de TODOS los tenants
+ *   - global-feedback: Obtener feedback beta de TODOS los tenants
+ *   - resolve-error-global: Marcar un error reportado como resuelto (global)
+ *   - review-feedback-global: Revisar feedback (global)
+ *   - get-feature-flags: Obtener feature flags actuales
+ *   - update-feature-flag: Actualizar una feature flag
+ *   - health-check: Ejecutar health check de la plataforma
  */
 
 export async function POST(request: NextRequest) {
@@ -51,6 +60,9 @@ export async function POST(request: NextRequest) {
     "update-tenant", "tenant-detail", "list-all-users", "update-user-role",
     "delete-user", "add-user-to-tenant", "remove-user-from-tenant",
     "regenerate-code", "transfer-ownership", "tenant-stats", "bulk-action",
+    "global-audit", "global-errors", "global-feedback",
+    "resolve-error-global", "review-feedback-global",
+    "get-feature-flags", "update-feature-flag", "health-check",
   ];
 
   if (!action || !validActions.includes(action)) {
@@ -63,21 +75,21 @@ export async function POST(request: NextRequest) {
 
     // ===== DASHBOARD — Global Stats =====
     if (action === "dashboard") {
-      const [tenantsSnap, usersSnap, projectsSnap] = await Promise.all([
+      // Get full data for tenants and users (needed for orphan detection + summaries)
+      const [tenantsSnap, usersSnap] = await Promise.all([
         db.collection("tenants").get(),
         db.collection("users").get(),
-        db.collection("projects").get(),
       ]);
 
       const totalTenants = tenantsSnap.size;
       const totalUsers = usersSnap.size;
-      const totalProjects = projectsSnap.size;
 
-      // Count tasks, expenses, etc. with collection counts
-      const [tasksSnap, expensesSnap, meetingsSnap] = await Promise.all([
-        db.collection("tasks").get(),
-        db.collection("expenses").get(),
-        db.collection("meetings").get(),
+      // Use .count().get() for collections where we only need counts
+      const [totalProjects, totalTasks, totalExpenses, totalMeetings] = await Promise.all([
+        db.collection("projects").count().get().then((s: any) => s.data().count).catch(() => 0),
+        db.collection("tasks").count().get().then((s: any) => s.data().count).catch(() => 0),
+        db.collection("expenses").count().get().then((s: any) => s.data().count).catch(() => 0),
+        db.collection("meetings").count().get().then((s: any) => s.data().count).catch(() => 0),
       ]);
 
       // Build tenant summaries
@@ -104,9 +116,9 @@ export async function POST(request: NextRequest) {
         totalTenants,
         totalUsers,
         totalProjects,
-        totalTasks: tasksSnap.size,
-        totalExpenses: expensesSnap.size,
-        totalMeetings: meetingsSnap.size,
+        totalTasks,
+        totalExpenses,
+        totalMeetings,
         tenantSummaries,
         orphanUsersCount: orphanUsers.length,
         orphanUsers: orphanUsers.map((d: any) => ({
@@ -166,15 +178,9 @@ export async function POST(request: NextRequest) {
           projectCount = pSnap.data().count;
           taskCount = tSnap.data().count;
         } catch (e) {
-          // Fallback: use .get() if .count() not supported
-          try {
-            const [pSnap2, tSnap2] = await Promise.all([
-              db.collection("projects").where("tenantId", "==", doc.id).get(),
-              db.collection("tasks").where("tenantId", "==", doc.id).get(),
-            ]);
-            projectCount = pSnap2.size;
-            taskCount = tSnap2.size;
-          } catch (e2) { /* skip */ }
+          // If .count() not supported, skip counts rather than full scans
+          projectCount = 0;
+          taskCount = 0;
         }
 
         tenants.push({
@@ -358,18 +364,29 @@ export async function POST(request: NextRequest) {
       if (!tenantDoc.exists) return NextResponse.json({ error: "Tenant no encontrado" }, { status: 404 });
 
       const data = tenantDoc.data()!;
-      const membersResolved: any[] = [];
-      for (const uid of (data.members || [])) {
-        const uDoc = await db.collection("users").doc(uid).get();
-        membersResolved.push({
-          uid,
-          name: uDoc.exists ? uDoc.data()?.name : "Desconocido",
-          email: uDoc.exists ? uDoc.data()?.email : "N/A",
-          role: uDoc.exists ? uDoc.data()?.role : "Miembro",
-          photoURL: uDoc.exists ? uDoc.data()?.photoURL || "" : "",
-          isCreator: uid === data.createdBy,
-        });
+
+      // Batch user lookups instead of sequential N+1
+      const memberUids = (data.members || []);
+      const userMap: Record<string, any> = {};
+      const batchSize = 20;
+      for (let i = 0; i < memberUids.length; i += batchSize) {
+        const batch = memberUids.slice(i, i + batchSize);
+        const docs = await Promise.all(batch.map((uid: string) => db.collection("users").doc(uid).get()));
+        for (const doc of docs) {
+          if (doc.exists) userMap[doc.id] = doc.data();
+        }
       }
+      const membersResolved = memberUids.map((uid: string) => {
+        const uData = userMap[uid];
+        return {
+          uid,
+          name: uData?.name || "Desconocido",
+          email: uData?.email || "N/A",
+          role: uData?.role || "Miembro",
+          photoURL: uData?.photoURL || "",
+          isCreator: uid === data.createdBy,
+        };
+      });
 
       // Get all collections counts for this tenant
       const colNames = ["projects", "tasks", "expenses", "suppliers", "companies", "meetings", "galleryPhotos", "invProducts", "invCategories", "invMovements", "invTransfers", "timeEntries", "invoices", "comments"];
@@ -380,7 +397,7 @@ export async function POST(request: NextRequest) {
           collectionStats[col] = snap.data().count;
         } catch {
           try {
-            const snap = await db.collection(col).where("tenantId", "==", tenantId).limit(1).get();
+            const snap = await db.collection(col).where("tenantId", "==", tenantId).get();
             collectionStats[col] = snap.size;
           } catch {
             collectionStats[col] = 0;
@@ -419,6 +436,12 @@ export async function POST(request: NextRequest) {
     if (action === "list-all-users") {
       const usersSnap = await db.collection("users").orderBy("createdAt", "desc").get();
 
+      // Build a map of user UID → user doc data for role lookups
+      const userDocMap: Record<string, any> = {};
+      for (const d of usersSnap.docs) {
+        userDocMap[d.id] = d.data();
+      }
+
       // Get all tenants to cross-reference
       const tenantsSnap = await db.collection("tenants").get();
       const userTenantMap: Record<string, { tenantId: string; tenantName: string; role: string }[]> = {};
@@ -427,10 +450,16 @@ export async function POST(request: NextRequest) {
         const data = doc.data()!;
         for (const uid of (data.members || [])) {
           if (!userTenantMap[uid]) userTenantMap[uid] = [];
+          // Use the user's actual role from their user document, not a guess from tenant membership
+          const userDoc = userDocMap[uid];
+          const userRole = userDoc?.role || "Miembro";
+          const isCreator = uid === data.createdBy;
+          const isSuperAdmin = isCreator || (data.superAdmins || []).includes(uid);
+          const tenantRole = isSuperAdmin ? "Super Admin" : userRole;
           userTenantMap[uid].push({
             tenantId: doc.id,
             tenantName: data.name || "Sin nombre",
-            role: uid === data.createdBy ? "Super Admin" : "Miembro",
+            role: tenantRole,
           });
         }
       }
@@ -609,38 +638,21 @@ export async function POST(request: NextRequest) {
 
       const colNames = ["projects", "tasks", "expenses", "suppliers", "companies", "meetings", "galleryPhotos", "invProducts", "invCategories", "invMovements", "invTransfers", "timeEntries", "invoices", "comments", "generalMessages"];
       const stats: Record<string, number> = {};
-      const recentActivity: any[] = [];
 
+      // Get actual counts for ALL collections using .count().get() (same approach as tenant-detail)
       for (const col of colNames) {
         try {
-          const snap = await db.collection(col).where("tenantId", "==", tenantId).orderBy("createdAt", "desc").limit(1).get();
-          stats[col] = snap.size > 0 ? 1 : 0; // Using limit(1) to check existence
+          const snap = await db.collection(col).where("tenantId", "==", tenantId).count().get();
+          stats[col] = snap.data().count;
         } catch {
-          stats[col] = 0;
+          // Fallback: use .get() if .count() not supported
+          try {
+            const snap = await db.collection(col).where("tenantId", "==", tenantId).get();
+            stats[col] = snap.size;
+          } catch {
+            stats[col] = 0;
+          }
         }
-      }
-
-      // Get actual counts for main collections
-      try {
-        const [pSnap, tSnap, eSnap] = await Promise.all([
-          db.collection("projects").where("tenantId", "==", tenantId).count().get(),
-          db.collection("tasks").where("tenantId", "==", tenantId).count().get(),
-          db.collection("expenses").where("tenantId", "==", tenantId).count().get(),
-        ]);
-        stats.projects = pSnap.data().count;
-        stats.tasks = tSnap.data().count;
-        stats.expenses = eSnap.data().count;
-      } catch {
-        try {
-          const [pSnap, tSnap, eSnap] = await Promise.all([
-            db.collection("projects").where("tenantId", "==", tenantId).get(),
-            db.collection("tasks").where("tenantId", "==", tenantId).get(),
-            db.collection("expenses").where("tenantId", "==", tenantId).get(),
-          ]);
-          stats.projects = pSnap.size;
-          stats.tasks = tSnap.size;
-          stats.expenses = eSnap.size;
-        } catch { /* skip */ }
       }
 
       return NextResponse.json({ tenantId, stats });
@@ -696,10 +708,41 @@ export async function POST(request: NextRequest) {
           }
         }
       } else if (type === "bulk-delete") {
+        // Prevent admin from deleting themselves
+        if (targetIds.includes(user.uid)) {
+          return NextResponse.json({ error: "No puedes eliminarte a ti mismo" }, { status: 400 });
+        }
+
         for (const uid of targetIds) {
           try {
+            // 1. Remove from all tenants (same as delete-user)
+            const tenantsSnap = await db.collection("tenants").where("members", "array-contains", uid).get();
+            for (const doc of tenantsSnap.docs) {
+              await db.collection("tenants").doc(doc.id).update({
+                members: FieldValue.arrayRemove(uid),
+              });
+              // If user was creator, transfer ownership to another member
+              if (doc.data().createdBy === uid) {
+                const members = (doc.data().members || []).filter((m: string) => m !== uid);
+                if (members.length > 0) {
+                  await db.collection("tenants").doc(doc.id).update({ createdBy: members[0] });
+                }
+              }
+            }
+
+            // 2. Delete user doc
             await db.collection("users").doc(uid).delete();
-            results.push({ uid, success: true });
+
+            // 3. Disable Firebase Auth user (same as delete-user)
+            try {
+              const { getAdminAuth } = await import("@/lib/firebase-admin");
+              const adminAuth = getAdminAuth();
+              await adminAuth.updateUser(uid, { disabled: true });
+            } catch (e: any) {
+              console.warn(`[SuperAdmin] Could not disable Auth user ${uid}: ${e.message}`);
+            }
+
+            results.push({ uid, success: true, removedFromTenants: tenantsSnap.size });
           } catch (e: any) {
             results.push({ uid, success: false, error: e.message });
           }
@@ -720,10 +763,337 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ type, processed: results.length, succeeded: results.filter((r: any) => r.success).length, failed: results.filter((r: any) => !r.success).length, results });
     }
 
+    // ===== GLOBAL AUDIT — Audit logs across ALL tenants =====
+    if (action === "global-audit") {
+      const snap = await db.collection("audit_logs").orderBy("createdAt", "desc").limit(100).get();
+
+      const logs = snap.docs.map((d: any) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          ...data,
+          createdAt: data.createdAt?._seconds
+            ? new Date(data.createdAt._seconds * 1000).toISOString()
+            : data.createdAt || null,
+        };
+      });
+
+      // Resolve userNames for logs that don't have it
+      const uidsToResolve = [...new Set(
+        logs
+          .filter((l: any) => l.userId && !l.userName)
+          .map((l: any) => l.userId as string)
+      )];
+      const userMap: Record<string, string> = {};
+      if (uidsToResolve.length > 0) {
+        const batchSize = 20;
+        for (let i = 0; i < uidsToResolve.length; i += batchSize) {
+          const batch = uidsToResolve.slice(i, i + batchSize);
+          const docs = await Promise.all(batch.map((uid: string) => db.collection("users").doc(uid).get()));
+          for (const doc of docs) {
+            if (doc.exists) userMap[doc.id] = doc.data()?.name || "Desconocido";
+          }
+        }
+      }
+
+      // Resolve tenant names for logs that have tenantId
+      const tenantIdsToResolve = [...new Set(
+        logs.filter((l: any) => l.tenantId).map((l: any) => l.tenantId as string)
+      )];
+      const tenantMap: Record<string, string> = {};
+      if (tenantIdsToResolve.length > 0) {
+        const batchSize = 20;
+        for (let i = 0; i < tenantIdsToResolve.length; i += batchSize) {
+          const batch = tenantIdsToResolve.slice(i, i + batchSize);
+          const docs = await Promise.all(batch.map((tid: string) => db.collection("tenants").doc(tid).get()));
+          for (const doc of docs) {
+            if (doc.exists) tenantMap[doc.id] = doc.data()?.name || "Sin nombre";
+          }
+        }
+      }
+
+      const resolvedLogs = logs.map((l: any) => ({
+        ...l,
+        userName: l.userName || userMap[l.userId] || "Desconocido",
+        tenantName: l.tenantId ? (tenantMap[l.tenantId] || "Sin nombre") : undefined,
+      }));
+
+      return NextResponse.json({ logs: resolvedLogs });
+    }
+
+    // ===== GLOBAL ERRORS — Error reports across ALL tenants =====
+    if (action === "global-errors") {
+      const snap = await db.collection("error_reports").orderBy("createdAt", "desc").limit(100).get();
+
+      const reports = snap.docs.map((d: any) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          ...data,
+          createdAt: data.createdAt?._seconds
+            ? new Date(data.createdAt._seconds * 1000).toISOString()
+            : data.createdAt || null,
+        };
+      });
+
+      // Group by message field for error frequency
+      const groupMap: Record<string, { message: string; count: number; firstSeen: string | null; lastSeen: string | null; sampleIds: string[] }> = {};
+      for (const report of reports) {
+        const key = report.message || "(unknown error)";
+        if (!groupMap[key]) {
+          groupMap[key] = {
+            message: key,
+            count: 0,
+            firstSeen: report.createdAt,
+            lastSeen: report.createdAt,
+            sampleIds: [],
+          };
+        }
+        groupMap[key].count++;
+        // Update firstSeen / lastSeen
+        if (report.createdAt) {
+          if (!groupMap[key].firstSeen || report.createdAt < groupMap[key].firstSeen!) {
+            groupMap[key].firstSeen = report.createdAt;
+          }
+          if (!groupMap[key].lastSeen || report.createdAt > groupMap[key].lastSeen!) {
+            groupMap[key].lastSeen = report.createdAt;
+          }
+        }
+        if (groupMap[key].sampleIds.length < 5) {
+          groupMap[key].sampleIds.push(report.id);
+        }
+      }
+
+      const groups = Object.values(groupMap).sort((a, b) => b.count - a.count);
+
+      return NextResponse.json({ groups, totalReports: reports.length });
+    }
+
+    // ===== GLOBAL FEEDBACK — Beta feedback across ALL tenants =====
+    if (action === "global-feedback") {
+      const snap = await db.collection("beta_feedback").orderBy("createdAt", "desc").limit(100).get();
+
+      const items = snap.docs.map((d: any) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          ...data,
+          createdAt: data.createdAt?._seconds
+            ? new Date(data.createdAt._seconds * 1000).toISOString()
+            : data.createdAt || null,
+        };
+      });
+
+      // Compute category stats
+      const categoryStats: Record<string, number> = {};
+      for (const item of items) {
+        const cat = item.category || "Sin categoría";
+        categoryStats[cat] = (categoryStats[cat] || 0) + 1;
+      }
+
+      return NextResponse.json({ items, categoryStats });
+    }
+
+    // ===== RESOLVE ERROR GLOBAL — Mark error report as resolved =====
+    if (action === "resolve-error-global") {
+      const { errorId } = body;
+      if (!errorId) return NextResponse.json({ error: "errorId requerido" }, { status: 400 });
+
+      const doc = await db.collection("error_reports").doc(errorId).get();
+      if (!doc.exists) return NextResponse.json({ error: "Error report no encontrado" }, { status: 404 });
+
+      await db.collection("error_reports").doc(errorId).update({
+        resolved: true,
+        resolvedAt: FieldValue.serverTimestamp(),
+        resolvedBy: user.uid,
+      });
+
+      return NextResponse.json({ resolved: true });
+    }
+
+    // ===== REVIEW FEEDBACK GLOBAL — Review feedback (global) =====
+    if (action === "review-feedback-global") {
+      const { feedbackId, status, adminNote } = body;
+      if (!feedbackId) return NextResponse.json({ error: "feedbackId requerido" }, { status: 400 });
+
+      const validStatuses = ["pending", "reviewed", "resolved"];
+      if (!status || !validStatuses.includes(status)) {
+        return NextResponse.json({ error: `status requerido. Valores válidos: ${validStatuses.join(", ")}` }, { status: 400 });
+      }
+
+      const doc = await db.collection("beta_feedback").doc(feedbackId).get();
+      if (!doc.exists) return NextResponse.json({ error: "Feedback no encontrado" }, { status: 404 });
+
+      const updates: Record<string, any> = {
+        status,
+        reviewedBy: user.uid,
+        reviewedAt: FieldValue.serverTimestamp(),
+      };
+      if (adminNote !== undefined) {
+        updates.adminNote = adminNote;
+      }
+
+      await db.collection("beta_feedback").doc(feedbackId).update(updates);
+
+      return NextResponse.json({ reviewed: true });
+    }
+
+    // ===== GET FEATURE FLAGS =====
+    if (action === "get-feature-flags") {
+      // Try reading from Firestore config doc first
+      const configDoc = await db.collection("_platform_config").doc("feature_flags").get();
+
+      if (configDoc.exists) {
+        const data = configDoc.data()!;
+        // Firestore doc stores flags as { [key]: { enabled, description } }
+        return NextResponse.json({ flags: data });
+      }
+
+      // Fallback to defaults from feature-flags module
+      const allFlags = getAllFlags();
+      const flags: Record<string, { enabled: boolean; description: string }> = {};
+      for (const [key, val] of Object.entries(allFlags)) {
+        flags[key] = {
+          enabled: val.enabled,
+          description: val.description,
+        };
+      }
+
+      return NextResponse.json({ flags });
+    }
+
+    // ===== UPDATE FEATURE FLAG =====
+    if (action === "update-feature-flag") {
+      const { flagKey, enabled } = body;
+      if (!flagKey || typeof flagKey !== "string") {
+        return NextResponse.json({ error: "flagKey requerido (string)" }, { status: 400 });
+      }
+      if (typeof enabled !== "boolean") {
+        return NextResponse.json({ error: "enabled requerido (boolean)" }, { status: 400 });
+      }
+
+      // Read existing doc or use defaults for description
+      const configDoc = await db.collection("_platform_config").doc("feature_flags").get();
+      let description = "";
+      if (configDoc.exists && configDoc.data()?.[flagKey]?.description) {
+        description = configDoc.data()![flagKey].description;
+      } else {
+        // Try to get description from FLAG_REGISTRY via getAllFlags
+        const allFlags = getAllFlags();
+        if (allFlags[flagKey]) {
+          description = allFlags[flagKey].description;
+        }
+      }
+
+      await db.collection("_platform_config").doc("feature_flags").set({
+        [flagKey]: { enabled, description },
+      }, { merge: true });
+
+      return NextResponse.json({ updated: true, flagKey, enabled });
+    }
+
+    // ===== HEALTH CHECK — Platform health check =====
+    if (action === "health-check") {
+      const checks: {
+        adminSdk: boolean;
+        auth: boolean;
+        firestoreRead: boolean;
+        firestoreWrite: boolean;
+        totalTenants: number;
+        totalUsers: number;
+        totalProjects: number;
+      } = {
+        adminSdk: false,
+        auth: false,
+        firestoreRead: false,
+        firestoreWrite: false,
+        totalTenants: 0,
+        totalUsers: 0,
+        totalProjects: 0,
+      };
+
+      // 1. Verify Firebase Admin SDK initialization
+      try {
+        const initCheck = isAdminInitialized();
+        checks.adminSdk = initCheck.ok;
+      } catch {
+        checks.adminSdk = false;
+      }
+
+      // 2. Verify Auth token verification works
+      try {
+        const adminAuth = getAdminAuth();
+        // Just listing 1 user is enough to verify the Auth service is reachable
+        await adminAuth.listUsers(1);
+        checks.auth = true;
+      } catch {
+        checks.auth = false;
+      }
+
+      // 3. Test Firestore read (try reading a non-existent doc)
+      try {
+        await db.collection("_platform_config").doc("__health_check_read__").get();
+        checks.firestoreRead = true;
+      } catch {
+        checks.firestoreRead = false;
+      }
+
+      // 4. Test Firestore write + delete
+      try {
+        const healthRef = db.collection("_platform_config").doc("health_check");
+        await healthRef.set({
+          timestamp: FieldValue.serverTimestamp(),
+          checkedBy: user.uid,
+        });
+        await healthRef.delete();
+        checks.firestoreWrite = true;
+      } catch {
+        checks.firestoreWrite = false;
+      }
+
+      // 5. Count total docs in key collections
+      try {
+        const [tenantsSnap, usersSnap, projectsSnap] = await Promise.all([
+          db.collection("tenants").get(),
+          db.collection("users").get(),
+          db.collection("projects").get(),
+        ]);
+        checks.totalTenants = tenantsSnap.size;
+        checks.totalUsers = usersSnap.size;
+        checks.totalProjects = projectsSnap.size;
+      } catch {
+        // Keep zeros
+      }
+
+      // Determine overall status
+      const criticalChecks = [checks.adminSdk, checks.firestoreRead, checks.firestoreWrite];
+      const allCritical = criticalChecks.every(Boolean);
+      const anyCritical = criticalChecks.some(Boolean);
+
+      let status: "healthy" | "degraded" | "down";
+      if (allCritical) {
+        status = checks.auth ? "healthy" : "degraded";
+      } else if (anyCritical) {
+        status = "degraded";
+      } else {
+        status = "down";
+      }
+
+      return NextResponse.json({ status, checks });
+    }
+
     return NextResponse.json({ error: "Acción no reconocida" }, { status: 400 });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Error interno";
     console.error("[SuperAdmin] Error:", message);
+
+    // Detect quota exhaustion
+    if (message.includes("RESOURCE_EXHAUSTED") || message.includes("quota exceeded")) {
+      return NextResponse.json({
+        error: "Cuota de Firebase excedida. Las operaciones de lectura se han limitado. Intente de nuevo más tarde o contacte al administrador."
+      }, { status: 429 });
+    }
+
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
