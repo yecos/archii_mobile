@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { useChatContext } from '@/hooks/useChat';
 import { fmtRecTime, fmtSize as fmtFileSize } from '@/lib/helpers';
-import { Search, ChevronLeft, X, Pause, Play, Download, MoreVertical, Paperclip, Mic, Send } from 'lucide-react';
+import { Search, ChevronLeft, X, Pause, Play, Download, MoreVertical, Paperclip, Mic, Send, Plus, Check } from 'lucide-react';
 
 /* ===== EMOJI DATA ===== */
 const EMOJI_CATEGORIES = [
@@ -34,6 +34,22 @@ const formatDateLabel = (date: Date): string => {
   return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
 };
 
+/* ===== SHORT TIME FORMATTER (for DM sidebar) ===== */
+const formatTimeShort = (timestamp: any): string => {
+  if (!timestamp) return '';
+  const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
+  if (!(date instanceof Date) || isNaN(date.getTime())) return '';
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diff = today.getTime() - msgDay.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days === 0) return date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  if (days === 1) return 'Ayer';
+  if (days < 7) return ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][date.getDay()];
+  return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+};
+
 /* ===== AVATAR COLOR ===== */
 const getAvatarHSL = (uid: string) => {
   let h = 0;
@@ -45,17 +61,19 @@ export default function ChatScreen() {
   const { authUser, projects, teamUsers, forms, setForms, showToast } = useApp();
   const {
     audioPreviewBlobRef, audioPreviewDuration, audioPreviewUrl, audioProgress,
-    chatDmUser, chatDropActive, chatMobileShow, chatProjectId, fileIcon,
+    chatDropActive, chatMobileShow, chatProjectId, fileIcon,
     fileInputRef, handleFileSelect, handleMicButton, isRecording,
     messages, pendingFiles, playingAudio, recDuration,
     recVolume, removePendingFile, sendAll, setAudioPreviewDuration, setAudioPreviewUrl,
-    setChatDropActive, setChatDmUser, setChatMobileShow, setChatProjectId, setChatReplyingTo, setMessages,
+    setChatDropActive, setChatMobileShow, setChatProjectId, setChatReplyingTo, setMessages,
     setShowEmojiPicker, showEmojiPicker, stopRecording, toggleAudioPlay,
     chatReplyingTo,
     messageReactions, toggleReaction,
     chatMenuMsg, setChatMenuMsg,
     chatMsgSearch, setChatMsgSearch,
     deleteMessage, copyMessageText,
+    // DM state
+    dmConversations, dmUnreadCounts, selectDmConversation, getDmConvId,
   } = useChatContext();
 
   const [emojiSearch, setEmojiSearch] = useState('');
@@ -63,8 +81,71 @@ export default function ChatScreen() {
   const [recentEmojis, setRecentEmojis] = useState<string[]>(QUICK_REACTIONS.slice(0, 8));
   const [lightboxImg, setLightboxImg] = useState<{ src: string; name?: string; size?: number } | null>(null);
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
+  const [showNewDmDialog, setShowNewDmDialog] = useState(false);
+  const [newDmSearch, setNewDmSearch] = useState('');
   const msgsEndRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Whether current conversation is a DM
+  const isDm = chatProjectId?.startsWith('dm_');
+
+  // Get the other user's uid for the active DM conversation
+  const activeDmOtherUid = useMemo(() => {
+    if (!isDm || !authUser) return null;
+    const conv = dmConversations.find(c => c.id === chatProjectId);
+    if (conv) {
+      return conv.participants.find(p => p !== authUser.uid) || null;
+    }
+    return null;
+  }, [isDm, chatProjectId, dmConversations, authUser]);
+
+  // Get the other user's info for the active DM conversation
+  const activeDmUser = useMemo(() => {
+    if (!activeDmOtherUid) return null;
+    const conv = dmConversations.find(c => c.id === chatProjectId);
+    // Try teamUsers first for richer data
+    const teamUser = teamUsers.find(u => u.id === activeDmOtherUid);
+    if (teamUser) {
+      return {
+        uid: activeDmOtherUid,
+        name: teamUser.data.name,
+        photoURL: teamUser.data.photoURL || (conv?.participantPhotos || {})[activeDmOtherUid] || '',
+        role: teamUser.data.role || '',
+      };
+    }
+    // Fallback to DM conversation data
+    if (conv) {
+      return {
+        uid: activeDmOtherUid,
+        name: (conv.participantNames || {})[activeDmOtherUid] || 'Usuario',
+        photoURL: (conv.participantPhotos || {})[activeDmOtherUid] || '',
+        role: '',
+      };
+    }
+    return null;
+  }, [activeDmOtherUid, chatProjectId, dmConversations, teamUsers]);
+
+  // Filtered DM conversations for sidebar
+  const filteredDmConversations = useMemo(() => {
+    const convs = dmConversations.filter(c => c.participants.includes(authUser?.uid || ''));
+    if (!forms.chatSearch) return convs;
+    const q = (forms.chatSearch || '').toLowerCase();
+    return convs.filter(c => {
+      const otherUid = c.participants.find(p => p !== authUser?.uid);
+      const name = (c.participantNames || {})[otherUid || ''] || '';
+      const teamUser = teamUsers.find(u => u.id === otherUid);
+      const displayName = teamUser?.data.name || name;
+      return displayName.toLowerCase().includes(q) || (c.lastMessage || '').toLowerCase().includes(q);
+    });
+  }, [dmConversations, authUser, forms.chatSearch, teamUsers]);
+
+  // Filtered team members for New DM dialog
+  const filteredNewDmUsers = useMemo(() => {
+    const users = teamUsers.filter(u => u.id !== authUser?.uid);
+    if (!newDmSearch.trim()) return users;
+    const q = newDmSearch.toLowerCase();
+    return users.filter(u => u.data.name.toLowerCase().includes(q) || u.data.email.toLowerCase().includes(q));
+  }, [teamUsers, authUser, newDmSearch]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -87,7 +168,6 @@ export default function ChatScreen() {
   const filteredEmojis = useMemo(() => {
     if (!emojiSearch.trim()) return null;
     const allEmojis = EMOJI_CATEGORIES.flatMap(c => c.emojis);
-    // Simple search: just return all (emojis don't have text names easily searchable)
     return allEmojis;
   }, [emojiSearch]);
 
@@ -105,13 +185,13 @@ export default function ChatScreen() {
     document.getElementById('chat-input-field')?.focus();
   };
 
-  // Filter messages by search
+  // Filter messages by search (supports both group and DM messages)
   const filteredMessages = useMemo(() => {
     if (!chatMsgSearch.trim()) return messages;
     const q = chatMsgSearch.toLowerCase();
     return messages.filter((m: any) => {
       const text = (m.text || '').toLowerCase();
-      const name = (m.userName || '').toLowerCase();
+      const name = (m.userName || m.senderName || '').toLowerCase();
       return text.includes(q) || name.includes(q);
     });
   }, [messages, chatMsgSearch]);
@@ -134,9 +214,31 @@ export default function ChatScreen() {
     return groups;
   }, [filteredMessages]);
 
-  // Conversation title/subtitle
-  const convTitle = chatProjectId === '__general__' ? '💬 Chat General' : chatProjectId === '__dm__' ? (() => { const u = teamUsers.find(x => x.id === chatDmUser); return (u?.data.name || u?.data.email || 'Chat directo'); })() : projects.find(p => p.id === chatProjectId)?.data.name || 'Selecciona un proyecto';
-  const convSubtitle = chatProjectId === '__general__' ? 'Canal de todo el equipo' : chatProjectId === '__dm__' ? (() => { const u = teamUsers.find(x => x.id === chatDmUser); return u?.data.role || 'Colaborador'; })() : chatProjectId ? 'Canal del equipo' : '';
+  // Conversation title/subtitle (supports DM conversations)
+  const convTitle = isDm
+    ? (activeDmUser?.name || 'Mensaje directo')
+    : chatProjectId === '__general__'
+      ? '💬 Chat General'
+      : projects.find(p => p.id === chatProjectId)?.data.name || 'Selecciona un proyecto';
+  const convSubtitle = isDm
+    ? (activeDmUser?.role || 'Mensaje directo')
+    : chatProjectId === '__general__'
+      ? 'Canal de todo el equipo'
+      : chatProjectId
+        ? 'Canal del equipo'
+        : '';
+
+  // Helper: get DM other user info for a conversation
+  const getDmOtherUser = (conv: { participants: string[]; participantNames: Record<string, string>; participantPhotos: Record<string, string> }) => {
+    const otherUid = conv.participants.find(p => p !== authUser?.uid) || '';
+    const teamUser = teamUsers.find(u => u.id === otherUid);
+    return {
+      uid: otherUid,
+      name: teamUser?.data.name || (conv.participantNames || {})[otherUid] || 'Usuario',
+      photoURL: teamUser?.data.photoURL || (conv.participantPhotos || {})[otherUid] || '',
+      role: teamUser?.data.role || '',
+    };
+  };
 
   return (
     <div className="animate-fadeIn flex flex-col md:h-full pb-[calc(60px+env(safe-area-inset-bottom,0px))] md:pb-0" style={{ minHeight: 0, flex: 1 }}>
@@ -156,7 +258,7 @@ export default function ChatScreen() {
           {/* Chat General */}
           <div
             className={`flex items-center gap-3 px-3 py-3.5 cursor-pointer transition-all duration-200 border-l-[3px] ${chatProjectId === '__general__' ? 'bg-[var(--accent)] border-l-[var(--af-accent)]' : 'border-l-transparent hover:bg-[var(--af-bg3)]'}`}
-            onClick={() => { setChatProjectId('__general__'); setChatDmUser(null); setChatMobileShow(true); setShowEmojiPicker(false); }}
+            onClick={() => { setChatProjectId('__general__'); setChatMobileShow(true); setShowEmojiPicker(false); }}
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--af-accent)] to-purple-500 flex items-center justify-center text-lg flex-shrink-0 shadow-md">💬</div>
             <div className="min-w-0">
@@ -164,36 +266,6 @@ export default function ChatScreen() {
               <div className="text-[11px] text-[var(--af-text3)] truncate">Canal de todo el equipo</div>
             </div>
           </div>
-
-          {/* Colaboradores (DM) */}
-          {teamUsers.length > 0 && (
-            <div className="mt-1">
-              <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Colaboradores ({teamUsers.length})</div>
-              {teamUsers
-                .filter(u => u.id !== authUser?.uid && (!forms.chatSearch || u.data.name.toLowerCase().includes((forms.chatSearch || '').toLowerCase()) || (u.data.email || '').toLowerCase().includes((forms.chatSearch || '').toLowerCase())))
-                .map(u => (
-                  <div
-                    key={u.id}
-                    className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-all duration-200 border-l-[3px] ${chatDmUser === u.id && chatProjectId === '__dm__' ? 'bg-[var(--accent)] border-l-[var(--af-accent)]' : 'border-l-transparent hover:bg-[var(--af-bg3)]'}`}
-                    onClick={() => { setChatProjectId('__dm__'); setChatDmUser(u.id); setChatMobileShow(true); setShowEmojiPicker(false); }}
-                  >
-                    <div className="relative flex-shrink-0">
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold"
-                        style={{ background: u.data.photoURL ? undefined : getAvatarHSL(u.id), color: '#fff' }}
-                      >
-                        {u.data.photoURL ? <img src={u.data.photoURL} alt="" className="w-full h-full rounded-full object-cover" /> : (u.data.name || u.data.email || '?')[0].toUpperCase()}
-                      </div>
-                      <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[var(--card)]" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[13px] font-medium truncate text-[var(--foreground)]">{u.data.name || u.data.email}</div>
-                      <div className="text-[11px] text-[var(--af-text3)] truncate">{u.data.role || 'Miembro'}</div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
 
           {/* Project chats */}
           {projects.length > 0 && (
@@ -206,8 +278,8 @@ export default function ChatScreen() {
                   return (
                     <div
                       key={p.id}
-                      className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-all duration-200 border-l-[3px] ${p.id === chatProjectId && chatProjectId !== '__general__' && chatProjectId !== '__dm__' ? 'bg-[var(--accent)] border-l-[var(--af-accent)]' : 'border-l-transparent hover:bg-[var(--af-bg3)]'}`}
-                      onClick={() => { setChatProjectId(p.id); setChatDmUser(null); setChatMobileShow(true); setShowEmojiPicker(false); }}
+                      className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-all duration-200 border-l-[3px] ${p.id === chatProjectId && !isDm ? 'bg-[var(--accent)] border-l-[var(--af-accent)]' : 'border-l-transparent hover:bg-[var(--af-bg3)]'}`}
+                      onClick={() => { setChatProjectId(p.id); setChatMobileShow(true); setShowEmojiPicker(false); }}
                     >
                       <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: projColor }} />
                       <div className="min-w-0 flex-1">
@@ -219,6 +291,66 @@ export default function ChatScreen() {
                 })}
             </div>
           )}
+
+          {/* DM conversations section */}
+          <div className="mt-1">
+            <div className="flex items-center justify-between px-3 py-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Mensajes Directos</span>
+              <button
+                aria-label="Nuevo mensaje directo"
+                className="w-5 h-5 rounded-md flex items-center justify-center cursor-pointer border-none bg-transparent hover:bg-[var(--af-bg3)] transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                onClick={() => { setShowNewDmDialog(true); setNewDmSearch(''); }}
+                title="Nuevo mensaje directo"
+              >
+                <Plus size={14} aria-hidden="true"/>
+              </button>
+            </div>
+
+            {filteredDmConversations.length === 0 && (
+              <div className="px-3 pb-3">
+                <div className="text-[11px] text-[var(--af-text3)] text-center py-3 bg-[var(--af-bg3)] rounded-lg">
+                  Sin conversaciones aún.<br />Pulsa <span className="font-semibold">+</span> para iniciar un mensaje directo.
+                </div>
+              </div>
+            )}
+
+            {filteredDmConversations.map(conv => {
+              const other = getDmOtherUser(conv);
+              const unread = dmUnreadCounts[conv.id] || 0;
+              const isActive = chatProjectId === conv.id;
+              return (
+                <div
+                  key={conv.id}
+                  className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-all duration-200 border-l-[3px] ${isActive ? 'bg-[var(--accent)] border-l-[var(--af-accent)]' : 'border-l-transparent hover:bg-[var(--af-bg3)]'}`}
+                  onClick={() => { selectDmConversation(other.uid); setChatMobileShow(true); setShowEmojiPicker(false); }}
+                >
+                  {/* Avatar */}
+                  {other.photoURL ? (
+                    <img src={other.photoURL} alt={other.name} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+                  ) : (
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold flex-shrink-0"
+                      style={{ background: getAvatarHSL(other.uid), color: '#fff' }}
+                    >
+                      {(other.name || '?')[0].toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[13px] font-medium truncate text-[var(--foreground)]">{other.name}</span>
+                      <span className="text-[10px] text-[var(--af-text3)] flex-shrink-0">{formatTimeShort(conv.lastMessageAt)}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[11px] text-[var(--af-text3)] truncate">{conv.lastMessage || ''}</span>
+                      {unread > 0 && (
+                        <span className="flex-shrink-0 min-w-[18px] h-[18px] rounded-full bg-[var(--af-accent)] text-white text-[10px] font-bold flex items-center justify-center px-1">{unread > 99 ? '99+' : unread}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -229,6 +361,19 @@ export default function ChatScreen() {
           <button aria-label="Volver a conversaciones" className="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer hover:bg-[var(--af-bg3)] transition-colors lg:hidden" onClick={() => { setChatMobileShow(false); setShowEmojiPicker(false); }}>
             <ChevronLeft size={20} aria-hidden="true"/>
           </button>
+          {/* DM avatar in header */}
+          {isDm && activeDmUser && (
+            activeDmUser.photoURL ? (
+              <img src={activeDmUser.photoURL} alt={activeDmUser.name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+            ) : (
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                style={{ background: getAvatarHSL(activeDmUser.uid), color: '#fff' }}
+              >
+                {(activeDmUser.name || '?')[0].toUpperCase()}
+              </div>
+            )
+          )}
           <div className="flex-1 min-w-0">
             <div className="text-sm font-semibold truncate text-[var(--foreground)]">{convTitle}</div>
             <div className="text-[11px] text-[var(--muted-foreground)]">{convSubtitle}</div>
@@ -290,13 +435,13 @@ export default function ChatScreen() {
             <div className="flex-1 flex items-center justify-center py-12">
               <div className="text-center max-w-[240px]">
                 <div className="w-20 h-20 rounded-2xl bg-[var(--af-bg3)] flex items-center justify-center mx-auto mb-4">
-                  <span className="text-4xl">{chatProjectId === '__dm__' ? '🤝' : '💬'}</span>
+                  <span className="text-4xl">💬</span>
                 </div>
                 <div className="text-[14px] font-semibold text-[var(--foreground)] mb-1">
-                  {chatMsgSearch.trim() ? 'Sin resultados' : chatProjectId === '__dm__' ? 'Inicia una conversación' : 'Empieza la conversación'}
+                  {chatMsgSearch.trim() ? 'Sin resultados' : 'Empieza la conversación'}
                 </div>
                 <div className="text-[12px] text-[var(--af-text3)] leading-relaxed">
-                  {chatMsgSearch.trim() ? 'No se encontraron mensajes con ese criterio' : chatProjectId === '__dm__' ? 'Envía el primer mensaje para iniciar el chat directo' : '¡Saluda al equipo y comparte actualizaciones!'}
+                  {chatMsgSearch.trim() ? 'No se encontraron mensajes con ese criterio' : isDm ? '¡Envía un mensaje para empezar la conversación!' : '¡Saluda al equipo y comparte actualizaciones!'}
                 </div>
               </div>
             </div>
@@ -324,16 +469,22 @@ export default function ChatScreen() {
 
               {/* Messages in group */}
               {group.messages.map((m: any, mi: number) => {
-                const isMe = m.uid === authUser?.uid;
+                // DM messages use senderId, group messages use uid
+                const senderUid = isDm ? (m.senderId || m.uid) : m.uid;
+                const isMe = senderUid === authUser?.uid;
                 const ts = m.createdAt?.toDate ? m.createdAt.toDate() : new Date();
                 const msgType = m.type || 'TEXT';
                 const prevMsg = mi > 0 ? group.messages[mi - 1] : null;
-                const isSameSender = prevMsg && prevMsg.uid === m.uid;
+                const prevSenderUid = isDm ? (prevMsg?.senderId || prevMsg?.uid) : prevMsg?.uid;
+                const isSameSender = prevMsg && prevSenderUid === senderUid;
                 const reactions = messageReactions[m.id] || {};
                 const reactionKeys = Object.keys(reactions);
                 const hasReactions = reactionKeys.length > 0;
                 const isMenuOpen = chatMenuMsg === m.id;
                 const isReactionOpen = showReactionPicker === m.id;
+                // DM messages use senderName, group messages use userName
+                const displayName = isDm ? (m.senderName || m.userName || 'Usuario') : (m.userName || 'Equipo');
+                const displayPhoto = isDm ? (m.senderPhoto || m.userPhoto || '') : (m.userPhoto || '');
 
                 return (
                   <div
@@ -345,13 +496,17 @@ export default function ChatScreen() {
                     {/* Sender info (show for new sender groups) */}
                     {!isSameSender && !isMe && (
                       <div className="flex items-center gap-2 mb-1 ml-1">
-                        <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-                          style={{ background: getAvatarHSL(m.uid || ''), color: '#fff' }}
-                        >
-                          {(m.userName || '?')[0].toUpperCase()}
-                        </div>
-                        <span className="text-[11px] font-semibold text-[var(--foreground)]">{m.userName || 'Equipo'}</span>
+                        {displayPhoto ? (
+                          <img src={displayPhoto} alt={displayName} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                        ) : (
+                          <div
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                            style={{ background: getAvatarHSL(senderUid || ''), color: '#fff' }}
+                          >
+                            {(displayName || '?')[0].toUpperCase()}
+                          </div>
+                        )}
+                        <span className="text-[11px] font-semibold text-[var(--foreground)]">{displayName}</span>
                         <span className="text-[10px] text-[var(--af-text3)]">{ts.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                     )}
@@ -372,7 +527,7 @@ export default function ChatScreen() {
                           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
                       }}>
-                        <div className="text-[10px] font-semibold text-[var(--af-accent)]">{m.replyTo.userName || 'Usuario'}</div>
+                        <div className="text-[10px] font-semibold text-[var(--af-accent)]">{m.replyTo.userName || m.replyTo.senderName || 'Usuario'}</div>
                         <div className="text-[11px] text-[var(--af-text3)] truncate">{(m.replyTo.text || '').substring(0, 80)}</div>
                       </div>
                     )}
@@ -451,7 +606,7 @@ export default function ChatScreen() {
                       {/* Context menu */}
                       {isMenuOpen && (
                         <div ref={menuRef} className={`absolute z-20 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl py-1 min-w-[160px] animate-fadeIn ${isMe ? 'right-0 mr-8' : 'left-0 ml-8'}`} style={{ bottom: 0, animationDuration: '0.12s' }}>
-                          <button className="w-full px-3.5 py-2 text-[12px] text-left hover:bg-[var(--af-bg3)] transition-colors flex items-center gap-2.5 cursor-pointer border-none bg-transparent text-[var(--foreground)]" onClick={() => { setChatReplyingTo({ id: m.id, text: m.text || '', userName: m.userName, uid: m.uid }); setChatMenuMsg(null); }}>
+                          <button className="w-full px-3.5 py-2 text-[12px] text-left hover:bg-[var(--af-bg3)] transition-colors flex items-center gap-2.5 cursor-pointer border-none bg-transparent text-[var(--foreground)]" onClick={() => { setChatReplyingTo({ id: m.id, text: m.text || '', userName: displayName, uid: senderUid || '' }); setChatMenuMsg(null); }}>
                             <span className="text-sm">↩️</span> Responder
                           </button>
                           {m.text && (
@@ -483,21 +638,29 @@ export default function ChatScreen() {
                       )}
                     </div>
 
-                    {/* Reactions row */}
-                    {(hasReactions) && (
-                      <div className={`flex flex-wrap gap-1 mt-0.5 ${isMe ? 'justify-end mr-1' : 'ml-1'}`}>
-                        {reactionKeys.map(emoji => (
-                          <button
-                            key={emoji}
-                            className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[12px] border cursor-pointer transition-all hover:scale-105 ${reactions[emoji].includes(authUser?.uid ?? '') ? 'bg-[var(--af-accent)]/15 border-[var(--af-accent)]/30' : 'bg-[var(--af-bg3)] border-[var(--border)] hover:border-[var(--af-accent)]/30'}`}
-                            onClick={() => toggleReaction(m.id, emoji)}
-                          >
-                            <span>{emoji}</span>
-                            <span className="text-[10px] text-[var(--muted-foreground)]">{reactions[emoji].length}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    {/* Reactions row + read indicator */}
+                    <div className={`flex items-center gap-1 mt-0.5 ${isMe ? 'flex-row-reverse mr-1' : 'ml-1'}`}>
+                      {hasReactions && (
+                        <div className={`flex flex-wrap gap-1 ${isMe ? 'flex-row-reverse' : ''}`}>
+                          {reactionKeys.map(emoji => (
+                            <button
+                              key={emoji}
+                              className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[12px] border cursor-pointer transition-all hover:scale-105 ${reactions[emoji].includes(authUser?.uid ?? '') ? 'bg-[var(--af-accent)]/15 border-[var(--af-accent)]/30' : 'bg-[var(--af-bg3)] border-[var(--border)] hover:border-[var(--af-accent)]/30'}`}
+                              onClick={() => toggleReaction(m.id, emoji)}
+                            >
+                              <span>{emoji}</span>
+                              <span className="text-[10px] text-[var(--muted-foreground)]">{reactions[emoji].length}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {/* "Leído" indicator for DM own messages */}
+                      {isDm && isMe && m.readAt && (
+                        <span className="text-[10px] text-[var(--af-accent)] flex items-center gap-0.5">
+                          <Check size={10} aria-hidden="true"/> Leído
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -697,6 +860,81 @@ export default function ChatScreen() {
               {lightboxImg.name}{lightboxImg.size ? ` · ${fmtFileSize(lightboxImg.size)}` : ''}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ===== NEW DM DIALOG ===== */}
+      {showNewDmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fadeIn" onClick={() => setShowNewDmDialog(false)}>
+          <div
+            className="bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-2xl w-[90vw] max-w-[400px] max-h-[80vh] flex flex-col animate-fadeIn overflow-hidden"
+            onClick={e => e.stopPropagation()}
+            style={{ animationDuration: '0.15s' }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+              <div>
+                <div className="text-[14px] font-semibold text-[var(--foreground)]">Nuevo mensaje directo</div>
+                <div className="text-[11px] text-[var(--muted-foreground)]">Selecciona un miembro del equipo</div>
+              </div>
+              <button
+                aria-label="Cerrar"
+                className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer border-none bg-transparent hover:bg-[var(--af-bg3)] text-[var(--muted-foreground)] transition-colors"
+                onClick={() => setShowNewDmDialog(false)}
+              >
+                <X size={18} aria-hidden="true"/>
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className="px-4 py-2 border-b border-[var(--border)]">
+              <div className="relative">
+                <Search size={14} className="stroke-current fill-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" aria-hidden="true"/>
+                <input
+                  className="w-full bg-[var(--af-bg3)] border border-[var(--border)] rounded-lg pl-8 pr-3 py-2 text-[13px] text-[var(--foreground)] outline-none focus:border-[var(--af-accent)] placeholder:text-[var(--af-text3)]"
+                  placeholder="Buscar por nombre o email..."
+                  value={newDmSearch}
+                  onChange={e => setNewDmSearch(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* User list */}
+            <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+              {filteredNewDmUsers.length === 0 && (
+                <div className="py-8 text-center">
+                  <div className="text-[13px] text-[var(--muted-foreground)]">No se encontraron miembros</div>
+                </div>
+              )}
+              {filteredNewDmUsers.map(user => (
+                <div
+                  key={user.id}
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-[var(--af-bg3)] border-b border-[var(--border)]/50 last:border-b-0"
+                  onClick={() => {
+                    selectDmConversation(user.id);
+                    setShowNewDmDialog(false);
+                    setNewDmSearch('');
+                  }}
+                >
+                  {user.data.photoURL ? (
+                    <img src={user.data.photoURL} alt={user.data.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                  ) : (
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-[14px] font-bold flex-shrink-0"
+                      style={{ background: getAvatarHSL(user.id), color: '#fff' }}
+                    >
+                      {(user.data.name || '?')[0].toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-medium truncate text-[var(--foreground)]">{user.data.name}</div>
+                    <div className="text-[11px] text-[var(--muted-foreground)] truncate">{user.data.role || user.data.email}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -76,8 +76,14 @@ const SuperAdminScreen = dynamic(() => import('@/screens/SuperAdminScreen'), { s
 const RFIsScreen = dynamic(() => import('@/screens/RFIsScreen'), { ssr: false });
 const SubmittalsScreen = dynamic(() => import('@/screens/SubmittalsScreen'), { ssr: false });
 const PunchListScreen = dynamic(() => import('@/screens/PunchListScreen'), { ssr: false });
+const ChangeOrdersScreen = dynamic(() => import('@/screens/ChangeOrdersScreen'), { ssr: false });
+const CatalogsScreen = dynamic(() => import('@/screens/CatalogsScreen'), { ssr: false });
+const FieldNotesScreen = dynamic(() => import('@/screens/FieldNotesScreen'), { ssr: false });
 const KanbanBoardScreen = dynamic(() => import('@/screens/KanbanBoardScreen'), { ssr: false });
 const WeeklyAgendaScreen = dynamic(() => import('@/screens/WeeklyAgendaScreen'), { ssr: false });
+const IntegrationsScreen = dynamic(() => import('@/screens/IntegrationsScreen'), { ssr: false });
+const AdminLogScreen = dynamic(() => import('@/screens/AdminLogScreen'), { ssr: false });
+const CarnetsScreen = dynamic(() => import('@/screens/CarnetsScreen'), { ssr: false });
 
 function AppContent() {
   const {
@@ -147,7 +153,12 @@ function AppContent() {
     budget: 'Presupuestos', files: 'Planos y archivos', gallery: 'Galería', inventory: 'Inventario',
     admin: 'Panel Admin', superAdmin: 'Super Admin', obra: 'Seguimiento obra', suppliers: 'Proveedores', team: 'Equipo',
     calendar: 'Calendario', portal: 'Portal cliente', profile: 'Mi Perfil', install: 'Instalar App',
-    companies: 'Empresas', rfis: 'RFIs', submittals: 'Submittals', punchList: 'Punch List', projectDetail: currentProject?.data.name || 'Proyecto',
+    companies: 'Empresas', rfis: 'RFIs', submittals: 'Submittals', punchList: 'Punch List',
+    changeorders: 'Órdenes de Cambio', catalogs: 'Catálogos', fieldnotes: 'Notas de Campo',
+    kanban: 'Tablero Kanban', integrations: 'Integraciones', adminlog: 'Logs del Sistema',
+    carnets: 'Carnets',
+    weeklyAgenda: 'Agenda Semanal', timeTracking: 'Time Tracking',
+    projectDetail: currentProject?.data.name || 'Proyecto',
   };
 
   return (
@@ -258,8 +269,8 @@ function AppContent() {
               {screen === 'projects' && <ProjectsScreen />}
               {screen === 'projectDetail' && <ProjectDetailScreen />}
               {screen === 'tasks' && <TasksScreen />}
-              {screen === 'kanban' && <KanbanBoardScreen />}
               {screen === 'chat' && <ChatScreen />}
+
               {screen === 'budget' && <BudgetScreen />}
               {screen === 'files' && <FilesScreen />}
               {screen === 'obra' && <ObraScreen />}
@@ -281,6 +292,13 @@ function AppContent() {
               {screen === 'rfis' && <RFIsScreen />}
               {screen === 'submittals' && <SubmittalsScreen />}
               {screen === 'punchList' && <PunchListScreen />}
+              {screen === 'changeorders' && <ChangeOrdersScreen />}
+              {screen === 'catalogs' && <CatalogsScreen />}
+              {screen === 'fieldnotes' && <FieldNotesScreen />}
+              {screen === 'kanban' && <KanbanBoardScreen />}
+              {screen === 'integrations' && <IntegrationsScreen />}
+              {screen === 'adminlog' && <AdminLogScreen />}
+              {screen === 'carnets' && <CarnetsScreen />}
               </ErrorBoundary>
             </motion.div>
           </AnimatePresence>
