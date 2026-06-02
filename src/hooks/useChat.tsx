@@ -6,6 +6,18 @@ import { fmtRecTime, fmtSize, scrubUndefined } from '@/lib/helpers';
 import { getFirebase } from '@/lib/firebase-service';
 
 /* ===== TYPES ===== */
+export interface DmConversation {
+  id: string;
+  participants: string[];
+  participantNames: Record<string, string>;
+  participantPhotos: Record<string, string>;
+  tenantId: string;
+  lastMessage: string;
+  lastMessageAt: any;
+  lastMessageBy: string;
+  createdAt: any;
+}
+
 export interface ChatContextValue {
   // State
   messages: any[];
@@ -48,6 +60,12 @@ export interface ChatContextValue {
   setChatMenuMsg: React.Dispatch<React.SetStateAction<string | null>>;
   chatMsgSearch: string;
   setChatMsgSearch: React.Dispatch<React.SetStateAction<string>>;
+
+  // DM state
+  dmConversations: DmConversation[];
+  dmUnreadCounts: Record<string, number>;
+  selectDmConversation: (otherUid: string) => void;
+  getDmConvId: (uid1: string, uid2: string) => string;
 
   // Refs
   mediaRecRef: React.RefObject<any>;
@@ -124,6 +142,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [chatMenuMsg, setChatMenuMsg] = useState<string | null>(null);
   const [chatMsgSearch, setChatMsgSearch] = useState('');
 
+  // ===== DM STATE =====
+  const [dmConversations, setDmConversations] = useState<DmConversation[]>([]);
+  const [dmUnreadCounts, setDmUnreadCounts] = useState<Record<string, number>>({});
+
   // ===== CHAT REFS =====
   const mediaRecRef = useRef<any>(null);
   const audioChunksRef = useRef<any[]>([]);
@@ -139,6 +161,107 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const chatProjectInitRef = useRef(false);
   const knownMessageIdsRef = useRef<Set<string>>(new Set());
   const firstLoadDoneRef = useRef(false);
+  const dmUnsubsRef = useRef<(() => void)[]>([]);
+
+  // ===== DM CONVERSATION ID HELPER =====
+  const getDmConvId = useCallback((uid1: string, uid2: string): string => {
+    return `dm_${[uid1, uid2].sort().join('_')}`;
+  }, []);
+
+  // ===== LISTEN TO DM CONVERSATIONS =====
+  useEffect(() => {
+    if (!authUser || !activeTenantId) { setDmConversations([]); return; }
+    const db = getFirebase().firestore();
+    const uid = authUser.uid;
+
+    const q = db.collection('directMessages')
+      .where('tenantId', '==', activeTenantId)
+      .orderBy('lastMessageAt', 'desc');
+
+    const unsub = q.onSnapshot((snap: any) => {
+      const convs = snap.docs
+        .map((d: any) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            participants: data.participants || [],
+            participantNames: data.participantNames || {},
+            participantPhotos: data.participantPhotos || {},
+            tenantId: data.tenantId || '',
+            lastMessage: data.lastMessage || '',
+            lastMessageAt: data.lastMessageAt,
+            lastMessageBy: data.lastMessageBy || '',
+            createdAt: data.createdAt,
+          } as DmConversation;
+        })
+        .filter((c: DmConversation) => c.participants.includes(uid));
+      setDmConversations(convs);
+    }, () => {});
+
+    return () => unsub();
+  }, [authUser, activeTenantId]);
+
+  // ===== LISTEN TO DM UNREAD COUNTS =====
+  useEffect(() => {
+    if (!authUser || dmConversations.length === 0) return;
+    const db = getFirebase().firestore();
+    const unsubs: (() => void)[] = [];
+
+    dmConversations.forEach(conv => {
+      const unsub = db.collection('directMessages')
+        .doc(conv.id)
+        .collection('messages')
+        .where('senderId', '!=', authUser.uid)
+        .where('readAt', '==', null)
+        .onSnapshot(snap => {
+          setDmUnreadCounts(prev => ({
+            ...prev,
+            [conv.id]: snap.size,
+          }));
+        }, () => {});
+      unsubs.push(unsub);
+    });
+
+    return () => unsubs.forEach(u => u());
+  }, [authUser, dmConversations]);
+
+  // ===== MARK DM MESSAGES AS READ =====
+  useEffect(() => {
+    if (!chatProjectId?.startsWith('dm_') || !authUser || messages.length === 0) return;
+
+    const unread = messages.filter(
+      (m: any) => m.senderId !== authUser.uid && !m.readAt
+    );
+    if (unread.length === 0) return;
+
+    const db = getFirebase().firestore();
+    const batch = db.batch();
+    const now = getFirebase().firestore.FieldValue.serverTimestamp();
+
+    unread.forEach((m: any) => {
+      const ref = db.collection('directMessages')
+        .doc(chatProjectId)
+        .collection('messages')
+        .doc(m.id);
+      batch.update(ref, { readAt: now });
+    });
+
+    batch.commit().catch(() => {});
+  }, [chatProjectId, messages, authUser]);
+
+  // ===== SELECT DM CONVERSATION =====
+  const selectDmConversation = useCallback((otherUid: string) => {
+    if (!authUser) return;
+    const dmId = getDmConvId(authUser.uid, otherUid);
+    setChatDmUser(otherUid);
+    setChatProjectId('__dm__');
+    // After a tick, switch to dm_ ID mode so the message listener picks it up
+    setTimeout(() => {
+      setChatProjectId(dmId);
+    }, 50);
+    setChatMobileShow(true);
+    setShowEmojiPicker(false);
+  }, [authUser, getDmConvId]);
 
   // ===== CLEANUP ON UNMOUNT =====
   useEffect(() => {
@@ -165,6 +288,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       const ids = [authUser.uid, chatDmUser].sort();
       const dmId = `dm_${ids[0]}_${ids[1]}`;
       unsub = db.collection('directMessages').doc(dmId).collection('messages').orderBy('createdAt', 'asc').limitToLast(60).onSnapshot(snap => {
+        setMessages(snap.docs.map((d: any) => ({ id: d.id, ...d.data() })));
+      }, () => {});
+    } else if (chatProjectId?.startsWith('dm_')) {
+      // DM conversation selected directly by dm_ ID
+      unsub = db.collection('directMessages').doc(chatProjectId).collection('messages').orderBy('createdAt', 'asc').limitToLast(60).onSnapshot(snap => {
         setMessages(snap.docs.map((d: any) => ({ id: d.id, ...d.data() })));
       }, () => {});
     } else {
@@ -249,7 +377,51 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         const ids = [authUser.uid, chatDmUser].sort();
         const dmId = `dm_${ids[0]}_${ids[1]}`;
         msgData.recipientId = chatDmUser;
-        await db.collection('directMessages').doc(dmId).collection('messages').add(msgData);
+        // Also update conversation metadata
+        const myTeamUser = (await db.collection('tenants').doc(activeTenantId).collection('users').doc(authUser.uid).get()).data();
+        const senderName = myTeamUser?.name || authUser.displayName || authUser.email?.split('@')[0] || 'Yo';
+        const senderPhoto = myTeamUser?.photoURL || authUser.photoURL || '';
+        const otherTeamUser = (await db.collection('tenants').doc(activeTenantId).collection('users').doc(chatDmUser).get()).data();
+        const otherName = otherTeamUser?.name || 'Usuario';
+        const otherPhoto = otherTeamUser?.photoURL || '';
+        const convRef = db.collection('directMessages').doc(dmId);
+        const convSnap = await convRef.get();
+        if (!convSnap.exists) {
+          await convRef.set({
+            participants: [authUser.uid, chatDmUser].sort(),
+            participantNames: { [authUser.uid]: senderName, [chatDmUser]: otherName },
+            participantPhotos: { [authUser.uid]: senderPhoto, [chatDmUser]: otherPhoto },
+            tenantId: activeTenantId || '',
+            lastMessage: text.substring(0, 200),
+            lastMessageAt: getFirebase().firestore.FieldValue.serverTimestamp(),
+            lastMessageBy: authUser.uid,
+            createdAt: getFirebase().firestore.FieldValue.serverTimestamp(),
+          });
+        } else {
+          await convRef.update({
+            lastMessage: text.substring(0, 200),
+            lastMessageAt: getFirebase().firestore.FieldValue.serverTimestamp(),
+            lastMessageBy: authUser.uid,
+            participantNames: { [authUser.uid]: senderName, [chatDmUser]: otherName },
+            participantPhotos: { [authUser.uid]: senderPhoto, [chatDmUser]: otherPhoto },
+          });
+        }
+        await convRef.collection('messages').add({ ...msgData, senderId: authUser.uid, senderName, senderPhoto, readAt: null });
+      }
+      else if (chatProjectId?.startsWith('dm_')) {
+        // DM conversation by dm_ ID
+        msgData.recipientId = chatDmUser || '';
+        const myTeamUser = (await db.collection('tenants').doc(activeTenantId).collection('users').doc(authUser.uid).get()).data();
+        const senderName = myTeamUser?.name || authUser.displayName || authUser.email?.split('@')[0] || 'Yo';
+        const senderPhoto = myTeamUser?.photoURL || authUser.photoURL || '';
+        // Update conversation metadata
+        const convRef = db.collection('directMessages').doc(chatProjectId);
+        await convRef.update({
+          lastMessage: text.substring(0, 200),
+          lastMessageAt: getFirebase().firestore.FieldValue.serverTimestamp(),
+          lastMessageBy: authUser.uid,
+        }).catch(() => {});
+        await convRef.collection('messages').add({ ...msgData, senderId: authUser.uid, senderName, senderPhoto, readAt: null });
       }
       else { await db.collection('projects').doc(chatProjectId).collection('messages').add(msgData); }
       setForms(p => ({ ...p, chatInput: '' }));
@@ -395,6 +567,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       else if (chatProjectId === '__dm__' && chatDmUser && authUser) {
         const ids = [authUser.uid, chatDmUser].sort();
         collection = `directMessages/dm_${ids[0]}_${ids[1]}/messages`;
+      } else if (chatProjectId?.startsWith('dm_')) {
+        collection = `directMessages/${chatProjectId}/messages`;
       } else {
         collection = `projects/${chatProjectId}/messages`;
       }
@@ -423,6 +597,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       else if (chatProjectId === '__dm__' && chatDmUser && authUser) {
         const ids = [authUser.uid, chatDmUser].sort();
         collection = `directMessages/dm_${ids[0]}_${ids[1]}/messages`;
+      } else if (chatProjectId?.startsWith('dm_')) {
+        collection = `directMessages/${chatProjectId}/messages`;
       } else {
         collection = `projects/${chatProjectId}/messages`;
       }
@@ -490,6 +666,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     toggleAudioPlay,
     fileIcon,
     fmtFileSize: fmtSize,
+    // DM state
+    dmConversations, dmUnreadCounts, selectDmConversation, getDmConvId,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

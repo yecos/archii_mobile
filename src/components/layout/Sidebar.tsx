@@ -4,7 +4,7 @@ import { getInitials, avatarColor } from '@/lib/helpers';
 import { ROLE_ICONS } from '@/lib/types';
 import { useUIStore } from '@/stores/ui-store';
 import type { FirebaseUser } from '@/lib/firebase-service';
-import { LayoutGrid, User, Folder, ClipboardCheck, MessageCircle, DollarSign, FileText, Camera, Image, Package, Settings, Store, Users, Calendar, Globe, Building2, Download, ChevronLeft, Home, Timer, Receipt, BarChart3, Shield, CircleHelp, ClipboardList, ListChecks, CalendarDays, Search, X, ChevronDown, FolderOpen, ShieldCheck, Briefcase, Wrench } from 'lucide-react';
+import { LayoutGrid, User, Folder, ClipboardCheck, MessageCircle, DollarSign, FileText, Camera, Image, Package, Settings, Store, Users, Calendar, Globe, Building2, Download, ChevronLeft, Home, Timer, Receipt, BarChart3, Shield, CircleHelp, ClipboardList, ListChecks, CalendarDays, Search, X, ChevronDown, FolderOpen, ShieldCheck, Briefcase, Wrench, FileEdit, Mail, BookOpen, StickyNote, Puzzle, CreditCard, Palette } from 'lucide-react';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 
 interface SidebarProps {
@@ -78,22 +78,31 @@ export default function Sidebar({
     { id: 'obra', label: 'Seguimiento obra', icon: <Camera size={18} className="stroke-current" aria-hidden="true" />, category: 'proyecto' as NavCategory },
     { id: 'gallery', label: 'Galería', icon: <Image size={18} className="stroke-current" aria-hidden="true" />, badge: galleryPhotos.length > 0 ? galleryPhotos.length : undefined, category: 'proyecto' as NavCategory },
     { id: 'inventory', label: 'Inventario', icon: <Package size={18} className="stroke-current" aria-hidden="true" />, badge: invLowStock.length > 0 ? invLowStock.length : undefined, category: 'proyecto' as NavCategory },
+    { id: 'kanban', label: 'Tablero Kanban', icon: <ListChecks size={18} className="stroke-current" aria-hidden="true" />, category: 'proyecto' as NavCategory },
     // ── Calidad ──
     { id: 'rfis', label: 'RFIs', icon: <CircleHelp size={18} className="stroke-current" aria-hidden="true" />, category: 'calidad' as NavCategory },
     { id: 'submittals', label: 'Submittals', icon: <ClipboardList size={18} className="stroke-current" aria-hidden="true" />, category: 'calidad' as NavCategory },
     { id: 'punchList', label: 'Punch List', icon: <ListChecks size={18} className="stroke-current" aria-hidden="true" />, category: 'calidad' as NavCategory },
+    { id: 'changeorders', label: 'Órdenes de Cambio', icon: <FileEdit size={18} className="stroke-current" aria-hidden="true" />, category: 'calidad' as NavCategory },
+    { id: 'fieldnotes', label: 'Notas de Campo', icon: <StickyNote size={18} className="stroke-current" aria-hidden="true" />, category: 'calidad' as NavCategory },
     // ── Administración ──
     { id: 'admin', label: 'Panel Admin', icon: <Settings size={18} className="stroke-current" aria-hidden="true" />, category: 'admin' as NavCategory },
     { id: 'suppliers', label: 'Proveedores', icon: <Store size={18} className="stroke-current" aria-hidden="true" />, category: 'admin' as NavCategory },
     { id: 'team', label: 'Equipo', icon: <Users size={18} className="stroke-current" aria-hidden="true" />, badge: teamUsers.length, category: 'admin' as NavCategory },
     { id: 'invoices', label: 'Facturas', icon: <Receipt size={18} className="stroke-current" aria-hidden="true" />, category: 'admin' as NavCategory },
+    { id: 'carnets', label: 'Carnets', icon: <CreditCard size={18} className="stroke-current" aria-hidden="true" />, category: 'admin' as NavCategory },
     { id: 'companies', label: 'Empresas', icon: <Building2 size={18} className="stroke-current" aria-hidden="true" />, category: 'admin' as NavCategory },
+    { id: 'catalogs', label: 'Catálogos', icon: <BookOpen size={18} className="stroke-current" aria-hidden="true" />, category: 'admin' as NavCategory },
+    { id: 'integrations', label: 'Integraciones', icon: <Globe size={18} className="stroke-current" aria-hidden="true" />, category: 'admin' as NavCategory },
     // ── Otros ──
     { id: 'calendar', label: 'Calendario', icon: <Calendar size={18} className="stroke-current" aria-hidden="true" />, badge: calendarBadge, category: 'otros' as NavCategory },
     { id: 'portal', label: 'Portal cliente', icon: <Globe size={18} className="stroke-current" aria-hidden="true" />, category: 'otros' as NavCategory },
     { id: 'reports', label: 'Reportes', icon: <BarChart3 size={18} className="stroke-current" aria-hidden="true" />, category: 'otros' as NavCategory },
     { id: 'install', label: 'Instalar App', icon: <Download size={18} className="stroke-current" aria-hidden="true" />, category: 'otros' as NavCategory },
-    ...(isEmailAdmin ? [{ id: 'superAdmin', label: 'Super Admin', icon: <Shield size={18} className="stroke-red-400" aria-hidden="true" />, isSuperAdmin: true, category: 'otros' as NavCategory }] : []),
+    ...(isEmailAdmin ? [
+      { id: 'adminlog', label: 'Logs del Sistema', icon: <Shield size={18} className="stroke-current" aria-hidden="true" />, category: 'otros' as NavCategory },
+      { id: 'superAdmin', label: 'Super Admin', icon: <Shield size={18} className="stroke-red-400" aria-hidden="true" />, isSuperAdmin: true, category: 'otros' as NavCategory },
+    ] : []),
   ];
 
   // ─── Collapsible category state (persisted to localStorage) ───

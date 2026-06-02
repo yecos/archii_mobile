@@ -552,6 +552,33 @@ export const KANBAN_DEFAULT_COLUMNS: Record<string, KanbanColumn[]> = {
   ],
 };
 
+/* ===== DIRECT MESSAGES TYPES ===== */
+export interface DirectMessageConversation {
+  id: string;
+  data: {
+    participants: string[];
+    participantNames: Record<string, string>;
+    participantPhotos: Record<string, string>;
+    tenantId: string;
+    lastMessage: string;
+    lastMessageAt: FirestoreTimestamp;
+    lastMessageBy: string;
+    createdAt: FirestoreTimestamp;
+  };
+}
+
+export interface DirectMessageMsg {
+  id: string;
+  data: {
+    text: string;
+    senderId: string;
+    senderName: string;
+    senderPhoto: string;
+    createdAt: FirestoreTimestamp;
+    readAt: FirestoreTimestamp | null;
+  };
+}
+
 /* ===== CONSTANTES ===== */
 
 /* ===== PLANTILLAS DE FASES POR TIPO DE PROYECTO ===== */
@@ -638,6 +665,142 @@ export const PUNCH_STATUS_COLORS: Record<string, string> = {
   'Completado': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
 };
 
+export const CO_TYPES = ['alcance', 'costo', 'cronograma', 'combinado'] as const;
+export const CO_STATUSES = ['borrador', 'pendiente_aprobacion', 'aprobada', 'rechazada', 'cancelada'] as const;
+export type COType = typeof CO_TYPES[number];
+export type COStatus = typeof CO_STATUSES[number];
+
+export interface ChangeOrderAttachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+  uploadedAt: any;
+}
+
+export interface ChangeOrderHistoryEntry {
+  action: 'created' | 'submitted' | 'approved' | 'rejected' | 'cancelled';
+  by: string;
+  byName: string;
+  at: any;
+  comments?: string;
+}
+
+export interface ChangeOrder {
+  id: string;
+  data: {
+    tenantId: string;
+    projectId: string;
+    orderNumber: string;
+    type: COType;
+    status: COStatus;
+    title: string;
+    description: string;
+    justification: string;
+    costImpact?: {
+      previousBudget: number;
+      newBudget: number;
+      difference: number;
+    };
+    scheduleImpact?: {
+      daysExtension: number;
+      reason: string;
+    };
+    attachments: ChangeOrderAttachment[];
+    createdBy: string;
+    createdByName: string;
+    createdAt: FirestoreTimestamp;
+    submittedAt?: FirestoreTimestamp;
+    approvedBy?: string;
+    approvedByName?: string;
+    approvedAt?: FirestoreTimestamp;
+    rejectionReason?: string;
+    reviewedComments?: string;
+    history: ChangeOrderHistoryEntry[];
+  };
+}
+
+export const CATALOG_TYPES = ['Acabados', 'Grifería', 'Muebles', 'Iluminación', 'Estructura', 'Carpintería', 'Pisos', 'Sanitario', 'Otro'] as const;
+export const CATALOG_STATUSES = ['Activo', 'Inactivo', 'En revisión'] as const;
+
+export interface CatalogItem {
+  name: string;
+  code: string;
+  unit: string;
+  unitPrice: number;
+  brand: string;
+  supplier: string;
+  notes: string;
+}
+
+export interface Catalog {
+  id: string;
+  data: {
+    tenantId: string;
+    projectId?: string;
+    name: string;
+    type: string;
+    description: string;
+    status: string;
+    items: CatalogItem[];
+    createdBy: string;
+    createdAt: FirestoreTimestamp;
+    updatedAt?: FirestoreTimestamp;
+  };
+}
+
+export const CATALOG_STATUS_COLORS: Record<string, string> = {
+  'Activo': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+  'Inactivo': 'bg-gray-500/10 text-gray-400 border-gray-500/30',
+  'En revisión': 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+};
+
+export const CATALOG_TYPE_COLORS: Record<string, string> = {
+  'Acabados': 'bg-violet-500/10 text-violet-400 border-violet-500/30',
+  'Grifería': 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+  'Muebles': 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  'Iluminación': 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
+  'Estructura': 'bg-red-500/10 text-red-400 border-red-500/30',
+  'Carpintería': 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+  'Pisos': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+  'Sanitario': 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
+  'Otro': 'bg-gray-500/10 text-gray-400 border-gray-500/30',
+};
+
+export const CO_STATUS_COLORS: Record<string, string> = {
+  'borrador': 'bg-gray-500/10 text-gray-400 border-gray-500/30',
+  'pendiente_aprobacion': 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  'aprobada': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+  'rechazada': 'bg-red-500/10 text-red-400 border-red-500/30',
+  'cancelada': 'bg-gray-500/10 text-gray-400 border-gray-500/30',
+};
+
+export const CO_TYPE_COLORS: Record<string, string> = {
+  'alcance': 'bg-violet-500/10 text-violet-400 border-violet-500/30',
+  'costo': 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  'cronograma': 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+  'combinado': 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+};
+
+export const CO_STATUS_LABELS: Record<string, string> = {
+  'borrador': 'Borrador',
+  'pendiente_aprobacion': 'Pendiente',
+  'aprobada': 'Aprobada',
+  'rechazada': 'Rechazada',
+  'cancelada': 'Cancelada',
+};
+
+export const CO_TYPE_LABELS: Record<string, string> = {
+  'alcance': 'Alcance',
+  'costo': 'Costo',
+  'cronograma': 'Cronograma',
+  'combinado': 'Combinado',
+};
+
+// FALLBACK admin emails for client-side gating.
+// The server uses process.env.ADMIN_EMAILS (api-auth.ts) as the source of truth.
+// The client fetches the real list from /api/admin-emails on init and falls back to this.
+// Keep in sync with the ADMIN_EMAILS env var.
 export const ADMIN_EMAILS = ['yecos11@gmail.com'];
 
 export const USER_ROLES = ['Admin', 'Director', 'Arquitecto', 'Interventor', 'Contratista', 'Cliente', 'Miembro'] as const;
@@ -692,6 +855,46 @@ export const DEFAULT_ROLE_PERMS: Record<string, string[]> = {
   'Ver Reportes': ['Admin', 'Director', 'Arquitecto', 'Interventor', 'Cliente'],
 };
 
+/* ===== FIELD NOTES TYPES ===== */
+export const FIELD_NOTE_CATEGORIES = ['Observación', 'Hallazgo', 'No conformidad', 'Riesgo', 'Progreso', 'Otro'] as const;
+export const FIELD_NOTE_STATUSES = ['Abierta', 'En seguimiento', 'Resuelta', 'Cerrada'] as const;
+export const FIELD_NOTE_PRIORITIES = ['Alta', 'Media', 'Baja'] as const;
+
+export interface FieldNote {
+  id: string;
+  data: {
+    tenantId: string;
+    projectId: string;
+    title: string;
+    content: string;
+    category: string;
+    priority: string;
+    status: string;
+    location: string;
+    photos: string[];
+    createdBy: string;
+    createdByName: string;
+    createdAt: FirestoreTimestamp;
+    updatedAt?: FirestoreTimestamp;
+  };
+}
+
+export const FIELD_NOTE_STATUS_COLORS: Record<string, string> = {
+  'Abierta': 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+  'En seguimiento': 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  'Resuelta': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+  'Cerrada': 'bg-gray-500/10 text-gray-400 border-gray-500/30',
+};
+
+export const FIELD_NOTE_CATEGORY_COLORS: Record<string, string> = {
+  'Observación': 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+  'Hallazgo': 'bg-violet-500/10 text-violet-400 border-violet-500/30',
+  'No conformidad': 'bg-red-500/10 text-red-400 border-red-500/30',
+  'Riesgo': 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+  'Progreso': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+  'Otro': 'bg-gray-500/10 text-gray-400 border-gray-500/30',
+};
+
 /** Navegación del sidebar */
 export const NAV_ITEMS = [
   { id: 'dashboard', icon: '📊', label: 'Dashboard' },
@@ -701,6 +904,7 @@ export const NAV_ITEMS = [
   { id: 'kanban', icon: '📊', label: 'Kanban' },
   { id: 'timeTracking', icon: '⏱️', label: 'Tiempo' },
   { id: 'chat', icon: '💬', label: 'Chat' },
+  { id: 'directmessages', icon: '✉️', label: 'Mensajes' },
   { id: 'budget', icon: '💰', label: 'Presupuestos' },
   { id: 'files', icon: '📂', label: 'Archivos' },
   { id: 'obra', label: 'Obra', icon: '🏗️' },
@@ -717,6 +921,9 @@ export const NAV_ITEMS = [
   { id: 'rfis', icon: '❓', label: 'RFIs' },
   { id: 'submittals', icon: '📋', label: 'Submittals' },
   { id: 'punchList', icon: '✅', label: 'Punch List' },
+  { id: 'changeorders', icon: '📝', label: 'Órdenes de Cambio' },
+  { id: 'catalogs', icon: '📚', label: 'Catálogos' },
+  { id: 'fieldnotes', icon: '🗒️', label: 'Notas de Campo' },
   { id: 'admin', icon: '⚙️', label: 'Admin' },
   { id: 'superAdmin', icon: '🛡️', label: 'Super Admin' },
 ] as const;
@@ -729,6 +936,7 @@ export const SCREEN_TITLES: Record<string, string> = {
   kanban: 'Tablero Kanban',
   timeTracking: 'Time Tracking',
   chat: 'Chat',
+  directmessages: 'Mensajes Directos',
   budget: 'Presupuestos',
   files: 'Archivos',
   obra: 'Seguimiento de Obra',
@@ -747,4 +955,8 @@ export const SCREEN_TITLES: Record<string, string> = {
   rfis: 'RFIs',
   submittals: 'Submittals',
   punchList: 'Punch List',
+  changeorders: 'Órdenes de Cambio',
+  catalogs: 'Catálogos',
+  fieldnotes: 'Notas de Campo',
+  carnets: 'Carnets',
 };
