@@ -423,6 +423,37 @@ export const notifyEmail = {
   },
 
   /**
+   * Actividad de agenda por empezar
+   */
+  async agendaStarting(
+    userId: string,
+    taskTitle: string,
+    startHour: number,
+    minutesLeft: number,
+  ) {
+    const h12 = startHour === 0 || startHour === 12
+      ? (startHour === 0 ? '12:00 am' : '12:00 pm')
+      : startHour > 12
+        ? `${startHour - 12}:00 pm`
+        : `${startHour}:00 am`;
+    const urgent = minutesLeft <= 5;
+    const emoji = urgent ? '🔴' : '⏰';
+    const color = urgent ? BRAND.danger : BRAND.accent;
+    const subject = `${emoji} Actividad en ${minutesLeft} min: ${taskTitle}`;
+
+    const body = `
+      <h2 style="margin:0 0 20px;font-size:20px;color:${color};">${emoji} ${urgent ? '¡Tu actividad empieza ahora!' : `Actividad en ${minutesLeft} minutos`}</h2>
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+        ${infoRow('📋', 'Actividad', taskTitle)}
+        ${infoRow('🕐', 'Hora de inicio', h12, color)}
+        ${infoRow('⏰', 'Tiempo restante', urgent ? '¡Ahora mismo!' : `${minutesLeft} minutos`, color)}
+      </table>
+      <p style="color:${BRAND.muted};font-size:14px;margin:0;">Abre Archii para ver los detalles de tu actividad en la agenda.</p>`;
+
+    await sendToUser(userId, subject, buildEmailHtml(subject, body));
+  },
+
+  /**
    * Notificacion personalizada
    */
   async custom(userId: string, subject: string, htmlBody: string) {
