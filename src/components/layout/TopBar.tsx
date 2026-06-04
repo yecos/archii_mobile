@@ -23,6 +23,8 @@ export default function TopBar() {
   const [showTenantMenu, setShowTenantMenu] = React.useState(false);
   const [showManageMembers, setShowManageMembers] = React.useState(false);
   const [fixingRole, setFixingRole] = React.useState(false);
+  const [tenantMenuPos, setTenantMenuPos] = React.useState<{ top: number; right: number } | null>(null);
+  const tenantBtnRef = React.useRef<HTMLButtonElement>(null);
 
   const handleFixRole = async () => {
     setFixingRole(true);
@@ -100,10 +102,15 @@ export default function TopBar() {
           {/* Mobile: tap opens tenant selector directly */}
           <button
             id="onboarding-tenant-trigger"
+            ref={tenantBtnRef}
             onClick={() => {
               if (window.innerWidth < 640) {
                 setShowTenantSelector(true);
               } else {
+                if (!showTenantMenu && tenantBtnRef.current) {
+                  const rect = tenantBtnRef.current.getBoundingClientRect();
+                  setTenantMenuPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
+                }
                 setShowTenantMenu(!showTenantMenu);
               }
             }}
@@ -120,10 +127,17 @@ export default function TopBar() {
             )}
             <ChevronDown size={12} className={`stroke-[var(--muted-foreground)] transition-transform hidden sm:block ${showTenantMenu ? 'rotate-180' : ''}`} aria-hidden="true"/>
           </button>
-          {showTenantMenu && (
+          {showTenantMenu && tenantMenuPos && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowTenantMenu(false)} />
-              <div className="absolute right-0 top-full mt-1.5 z-50 af-card bg-[var(--card)] border border-[var(--border)] rounded-xl p-1.5 shadow-2xl min-w-[200px]">
+              <div className="fixed inset-0 z-[9998]" onClick={() => { setShowTenantMenu(false); setTenantMenuPos(null); }} />
+              <div
+                className="fixed af-card bg-[var(--card)] border border-[var(--border)] rounded-xl p-1.5 shadow-2xl min-w-[200px] animate-scaleIn"
+                style={{
+                  top: tenantMenuPos.top,
+                  right: tenantMenuPos.right,
+                  zIndex: 9999,
+                }}
+              >
                 <div className="px-3 py-2 text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">Espacio actual</div>
                 <div className="px-3 py-1.5 text-sm font-medium flex items-center gap-2">
                   <Building2 size={14} className="stroke-[var(--af-accent)]" aria-hidden="true"/>
@@ -137,7 +151,7 @@ export default function TopBar() {
                 </div>
                 <div className="border-t border-[var(--border)] mt-1.5 pt-1.5">
                   <button
-                    onClick={() => { setShowTenantMenu(false); setShowTenantSelector(true); }}
+                    onClick={() => { setShowTenantMenu(false); setTenantMenuPos(null); setShowTenantSelector(true); }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-[var(--af-bg3)] transition-colors text-left bg-transparent border-none text-[var(--foreground)]"
                   >
                     <LayoutGrid size={14} className="stroke-[var(--muted-foreground)]" aria-hidden="true"/>
@@ -145,7 +159,7 @@ export default function TopBar() {
                   </button>
                   {activeTenantId && (
                     <button
-                      onClick={() => { setShowTenantMenu(false); setShowManageMembers(true); }}
+                      onClick={() => { setShowTenantMenu(false); setTenantMenuPos(null); setShowManageMembers(true); }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-[var(--af-bg3)] transition-colors text-left bg-transparent border-none text-[var(--foreground)]"
                     >
                       <Users size={14} className="stroke-[var(--muted-foreground)]" aria-hidden="true"/>
