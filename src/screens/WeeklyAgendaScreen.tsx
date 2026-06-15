@@ -142,6 +142,8 @@ export default function WeeklyAgendaScreen() {
   /* ─── State ─── */
   const [baseDate, setBaseDate] = useState(new Date());
   const [weekNotes, setWeekNotes] = useState<WeekNote[]>([]);
+  const [notesLoaded, setNotesLoaded] = useState(false);
+  const notesSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [filterProject, setFilterProject] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
   const [formTab, setFormTab] = useState<FormTab>('new');
@@ -159,6 +161,7 @@ export default function WeeklyAgendaScreen() {
     return today === 0 ? 6 : today - 1; // 0=Mon..6=Sun
   });
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  const [showMobileNotes, setShowMobileNotes] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   /* ─── Derived data ─── */
@@ -577,7 +580,64 @@ export default function WeeklyAgendaScreen() {
     }
   };
 
-  /* ─── Notes ─── */
+  /* ─── Notes: Firestore persistence ─── */
+  const weekDocId = useMemo(() => {
+    if (!activeTenantId) return '';
+    const monday = weekDates[0];
+    return `${activeTenantId}_${dateKey(monday)}`;
+  }, [activeTenantId, weekDates]);
+
+  // Load notes from Firestore when week changes
+  useEffect(() => {
+    if (!weekDocId || !authUser) return;
+    let cancelled = false;
+    const loadNotes = async () => {
+      try {
+        const db = getFirebase().firestore();
+        const doc = await db.collection('agendaWeekData').doc(weekDocId).get();
+        if (!cancelled) {
+          const data = doc.data();
+          setWeekNotes(data?.notes || []);
+          setNotesLoaded(true);
+        }
+      } catch (err) {
+        console.error('[Archii Agenda] Error loading notes:', err);
+        if (!cancelled) {
+          setNotesLoaded(true);
+          toast.error('Error al cargar las notas de la semana');
+        }
+      }
+    };
+    // Reset notes state before loading to avoid showing stale data
+    setWeekNotes([]);
+    setNotesLoaded(false);
+    loadNotes();
+    return () => { cancelled = true; };
+  }, [weekDocId, authUser]);
+
+  // Save notes to Firestore with debounce (1s)
+  useEffect(() => {
+    if (!notesLoaded || !weekDocId || !authUser) return;
+    if (notesSaveTimer.current) clearTimeout(notesSaveTimer.current);
+    notesSaveTimer.current = setTimeout(async () => {
+      try {
+        const db = getFirebase().firestore();
+        const ts = getFirebase().firestore.FieldValue.serverTimestamp();
+        await db.collection('agendaWeekData').doc(weekDocId).set(scrubUndefined({
+          tenantId: activeTenantId,
+          weekStart: dateKey(weekDates[0]),
+          notes: weekNotes,
+          updatedAt: ts,
+          updatedBy: authUser.uid,
+        }), { merge: true });
+      } catch (err) {
+        console.error('[Archii Agenda] Error saving notes:', err);
+        toast.error('Error al guardar las notas');
+      }
+    }, 1000);
+    return () => { if (notesSaveTimer.current) clearTimeout(notesSaveTimer.current); };
+  }, [weekNotes, notesLoaded, weekDocId, authUser, activeTenantId]);
+
   const addNote = () => {
     setWeekNotes(prev => [...prev, { id: uid(), text: '', color: NOTE_COLORS[prev.length % NOTE_COLORS.length] }]);
   };
@@ -929,6 +989,7 @@ export default function WeeklyAgendaScreen() {
           MOBILE VIEW — Card Timeline (completely different from desktop)
           ═══════════════════════════════════════════════════════════════ */}
       {isMobile && (
+        <>
         <div className="flex-1 overflow-auto">
           {/* Day Selector */}
           <div className="flex items-center gap-1 px-3 py-2 overflow-x-auto no-print" style={{ scrollbarWidth: 'none' }}>
@@ -1113,6 +1174,55 @@ export default function WeeklyAgendaScreen() {
             );
           })()}
         </div>
+
+        {/* ─── Mobile Notes Panel (collapsible) ─── */}
+        <div className="no-print border-t border-[var(--border)] mt-2">
+          <button
+            onClick={() => setShowMobileNotes(v => !v)}
+            className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[var(--af-bg3)] transition-colors"
+            aria-expanded={showMobileNotes}
+          >
+            <StickyNote className="w-4 h-4 text-amber-500" aria-hidden="true"/>
+            <span className="text-xs font-semibold flex-1">Notas de la semana</span>
+            {weekNotes.length > 0 && (
+              <span className="text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-full font-medium">{weekNotes.length}</span>
+            )}
+            <ChevronRight className={`w-4 h-4 text-[var(--muted-foreground)] transition-transform ${showMobileNotes ? 'rotate-90' : ''}`} aria-hidden="true"/>
+          </button>
+          {showMobileNotes && (
+            <div className="px-3 pb-3 space-y-2">
+              <button onClick={addNote} className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium py-1.5 hover:opacity-80 transition-opacity">
+                <Plus className="w-3.5 h-3.5" aria-hidden="true"/>
+                Agregar nota
+              </button>
+              {weekNotes.map(note => (
+                <div key={note.id} style={{ background: note.color }} className="rounded-lg p-2.5 relative group/note">
+                  <textarea
+                    value={note.text}
+                    onChange={e => updateNote(note.id, e.target.value)}
+                    placeholder="Escribe una nota..."
+                    className="w-full bg-transparent text-xs resize-none outline-none placeholder:text-[var(--muted-foreground)] min-h-[60px] text-[var(--foreground)]"
+                    rows={3}
+                  />
+                  <button
+                    onClick={() => deleteNote(note.id)}
+                    className="absolute top-1 right-1 w-6 h-6 rounded bg-black/10 dark:bg-white/10 text-[var(--muted-foreground)] flex items-center justify-center opacity-100 group-hover/note:opacity-100 transition-opacity hover:bg-red-200 dark:hover:bg-red-800"
+                    aria-label="Eliminar nota"
+                  >
+                    <Trash2 className="w-3 h-3" aria-hidden="true"/>
+                  </button>
+                </div>
+              ))}
+              {weekNotes.length === 0 && (
+                <div className="text-center py-3">
+                  <StickyNote className="w-5 h-5 text-amber-500/50 dark:text-amber-400/40 mx-auto mb-1" aria-hidden="true"/>
+                  <p className="text-[10px] text-[var(--muted-foreground)]">Sin notas esta semana</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        </>
       )}
 
       {/* ═══════════════════════════════════════════════════════════════
